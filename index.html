@@ -620,6 +620,7 @@ function telaAjustes(){
   var temEx=S.notas.some(function(n){return n.origem==='exemplo';});
   abrir(shead('Ajustes')+
    '<div class="card mb"><b>Seus dados ficam só neste celular.</b><p class="sub" style="margin:6px 0 12px">Faça um backup de vez em quando para não perder nada se trocar de aparelho ou limpar o navegador.</p><div class="stack"><button class="btn full" data-act="exportar">Salvar backup (arquivo)</button><button class="btn full" data-act="importar">Restaurar backup</button></div></div>'+
+   '<div class="card mb"><b>Indicar para alguém</b><p class="sub" style="margin:6px 0 12px">Cada pessoa usa o app com os próprios dados, salvos só no celular dela.</p><button class="btn pri full" data-act="compartilhar">Compartilhar app</button></div>'+
    '<div class="card mb"><b>Instalar no celular</b><p class="sub" style="margin:6px 0 0"><b>Android (Chrome):</b> menu ⋮ → <i>Instalar app</i> ou <i>Adicionar à tela inicial</i>.<br><b>iPhone (Safari):</b> botão compartilhar → <i>Adicionar à Tela de Início</i>.</p></div>'+
    '<div class="stack">'+(temEx?'<button class="btn full" data-act="limparExemplo">Apagar dados de exemplo</button>':'<button class="btn full" data-act="exemplo">Carregar dados de exemplo</button>')+
    '<button class="btn dan full" data-act="apagarTudo">Apagar todos os dados</button></div><p class="sub mt" style="text-align:center">'+S.notas.length+' notas salvas</p>');
@@ -683,6 +684,12 @@ document.addEventListener('click',function(e){
     case 'exemplo': exemplo(); break;
     case 'limparExemplo': limparExemplo(); break;
     case 'exportar': exportar(); break;
+    case 'compartilhar':
+      var link=location.origin+'/', msg='Meu Mercado: leia o QR Code da nota fiscal e compare seus gastos de mercado. '+link;
+      if(navigator.share){navigator.share({title:'Meu Mercado',text:'Leia o QR Code da nota fiscal e compare seus gastos de mercado.',url:link}).catch(function(){});}
+      else if(navigator.clipboard){navigator.clipboard.writeText(msg).then(function(){toast('Link copiado!');},function(){prompt('Copie o link:',link);});}
+      else prompt('Copie o link:',link);
+      break;
     case 'importar': document.getElementById('importFile').click(); break;
     case 'apagarTudo': if(confirm('Apagar todas as notas e ajustes deste celular?')){S={notas:[],nomes:{},links:{},ignorados:{}};V.mes=null;save();fechar();render();} break;
     case 'apagarNota': if(confirm('Apagar esta nota?')){S.notas=S.notas.filter(function(n){return n.id!==t.dataset.id;});save();fechar();render();toast('Nota apagada');} break;
