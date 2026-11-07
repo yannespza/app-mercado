@@ -1,5 +1,5 @@
 // Guarda o app no celular para abrir rápido e funcionar sem internet (a busca da nota precisa de internet).
-const CACHE = 'meumercado-v9';
+const CACHE = 'meumercado-v10';
 const ARQUIVOS = ['./', 'index.html', 'parser.js', 'manifest.json', 'vendor/jsQR.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

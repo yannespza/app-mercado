@@ -32,12 +32,35 @@ body{min-height:100vh;background:radial-gradient(120% 60% at 100% 0%,rgba(143,79
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 input,textarea,select{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line2);border-radius:12px;padding:11px 13px;width:100%;outline:none}
 input:focus,textarea:focus,select:focus{border-color:var(--purple)}
-.app{max-width:1100px;margin:0 auto;padding:calc(14px + var(--safe-t)) 16px calc(110px + var(--safe-b));display:flex;gap:28px}
-.side{display:none}
+.app{max-width:1100px;margin:0 auto;padding:calc(10px + var(--safe-t)) 16px calc(104px + var(--safe-b));display:flex;gap:28px}
+.side{position:fixed;top:0;left:0;bottom:0;width:min(290px,84vw);z-index:50;background:var(--bg2);border-right:1px solid var(--line2);padding:calc(18px + var(--safe-t)) 12px 24px;display:flex;flex-direction:column;gap:2px;overflow:auto;transform:translateX(-105%);transition:transform .22s ease}
+.side.open{transform:none;box-shadow:20px 0 60px rgba(0,0,0,.5)}
+.side .brand{margin:4px 8px 22px}
+.side button{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;color:var(--muted);font-weight:600;text-align:left;width:100%}
+.side button svg{width:20px;height:20px;flex:none}
+.side button.on{color:var(--text);background:var(--card)}
+.side button.on svg{color:var(--lime)}
+.side .sep{height:1px;background:var(--line);margin:10px 8px}
+#drawerBg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:49;display:none}
+#drawerBg.open{display:block}
+.fabScan{position:fixed;right:18px;bottom:calc(18px + var(--safe-b));width:60px;height:60px;border-radius:50%;background:var(--lime);color:#15200a;display:grid;place-items:center;z-index:21;box-shadow:0 10px 28px rgba(200,244,58,.3),0 0 0 5px var(--bg)}
+.fabScan svg{width:28px;height:28px}
+.hero{padding:20px}
+.hero .big{font-size:34px;font-weight:600;letter-spacing:-.02em;display:flex;align-items:center;gap:10px;margin:2px 0 6px;flex-wrap:wrap}
+.link{color:var(--purple)!important;font-weight:600}
+.seg.mini{padding:3px}.seg.mini button{padding:6px 10px;font-size:12px}
+.fchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.fchip{padding:8px 13px;border-radius:999px;border:1px solid var(--line2);font-size:13px;font-weight:600;color:var(--muted);background:var(--card)}
+.fchip b{margin-left:3px;color:var(--text)}
+.fchip.on{color:var(--text);border-color:var(--purple);background:var(--purpleBg)}
+.fchip.subiu.on{border-color:var(--red);background:var(--redBg)}.fchip.baixou.on{border-color:var(--lime);background:var(--limeBg)}
+.linkline{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);font-size:13.5px;color:var(--muted);margin-bottom:12px;text-align:left}
+.addrow{display:flex;gap:8px}.addrow input{flex:1}.addrow .btn{flex:none;padding:0 16px}
 main{flex:1;min-width:0}
 h1{font-size:26px;font-weight:500;letter-spacing:-.02em;margin:0}
 h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
-.top{display:flex;align-items:center;justify-content:space-between;margin:6px 0 18px;gap:10px}
+.top{display:flex;align-items:center;justify-content:space-between;margin:4px 0 14px;gap:10px}
+.top h1{font-size:21px;font-weight:600;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600;letter-spacing:-.02em}
 .logo{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--lime),#9bd11f);display:grid;place-items:center;color:#14200a}
 .logo svg{width:16px;height:16px}
@@ -147,7 +170,7 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 .ptable td.r,.ptable th.r{text-align:right}
 .spark{width:100%;height:70px;display:block}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(146px + var(--safe-b));background:var(--card2);border:1px solid var(--line2);border-radius:999px;padding:10px 16px;font-size:13.5px;z-index:60;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + var(--safe-b));background:var(--card2);border:1px solid var(--line2);border-radius:999px;padding:10px 16px;font-size:13.5px;z-index:60;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 .pr.good{color:var(--lime)!important;font-weight:700}
 .pr.bad{color:var(--red)!important;font-weight:700}
 .un{font-size:.78em;color:var(--muted);font-weight:500;margin-left:1px}
@@ -172,9 +195,9 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 .dica-balao::after{content:"";position:absolute;left:calc(var(--seta) - 8px);border:8px solid transparent}
 .dica-balao.baixo::after{top:-16px;border-bottom-color:var(--lime)}
 .dica-balao.cima::after{bottom:-16px;border-top-color:var(--lime)}
-.fixoPrecos{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + var(--safe-b));z-index:19;display:flex;align-items:center;gap:8px;background:var(--lime);color:#15200a;font-weight:700;border-radius:999px;padding:12px 20px;box-shadow:0 10px 28px rgba(0,0,0,.5),0 0 0 4px var(--bg);white-space:nowrap}
+.fixoPrecos{position:fixed;left:16px;right:92px;bottom:calc(22px + var(--safe-b));z-index:19;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--purple);color:#1a0a2a;font-weight:700;border-radius:999px;padding:15px 16px;box-shadow:0 10px 28px rgba(0,0,0,.5),0 0 0 4px var(--bg);white-space:nowrap;font-size:14.5px}
 .fixoPrecos svg{width:18px;height:18px}
-@media (min-width:980px){.fixoPrecos{bottom:24px;left:auto;right:24px;transform:none}}
+@media (min-width:980px){.fixoPrecos{bottom:24px;left:auto;right:24px}}
 .mt{margin-top:12px}.mb{margin-bottom:12px}
 .hide{display:none!important}
 @media (min-width:720px){
@@ -183,7 +206,9 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
   .kpi .v{font-size:24px}
 }
 @media (min-width:980px){
-  .side{display:flex;flex-direction:column;gap:4px;width:210px;flex:none;position:sticky;top:20px;height:calc(100vh - 40px)}
+  .side{position:sticky;transform:none;top:20px;height:calc(100vh - 40px);width:230px;flex:none;background:none;border:0;padding:0;z-index:1}
+  .menuBtn,.fabScan,#drawerBg{display:none!important}
+  .top h1{text-align:left}
   .side .brand{margin:8px 8px 26px}
   .side button{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;color:var(--muted);font-weight:500;text-align:left}
   .side button svg{width:20px;height:20px}
@@ -197,10 +222,11 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 </head>
 <body>
 <div class="app">
+  <div id="drawerBg" data-act="menu"></div>
   <aside class="side" id="side"></aside>
   <main id="main"></main>
 </div>
-<nav class="nav" id="nav"></nav>
+<button class="fabScan" id="fabScan" data-act="scan" aria-label="Ler nota fiscal"></button>
 <div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="importFile" accept="application/json,.json" class="hide">
@@ -299,17 +325,15 @@ function precoRef(it,peso){
 }
 function uRef(base,un){return base==='kg'?'/kg':base==='L'?'/L':'/'+String(un||'un').toLowerCase();}
 function $$ref(c){return c&&c.ref!=null?$$(c.ref)+'<span class="un">'+uRef(c.base,c.un)+'</span>':$$(c?c.vUnit:0);}
-/* Compara uma compra com a compra anterior do mesmo produto em um mês anterior.
-   Prefere o mesmo mercado; se não houver, usa a mais recente de outro mercado. */
+/* Mês a mês: compara com a compra mais recente do mesmo produto, no MESMO mercado, num mês anterior.
+   (Comparar mercados diferentes em meses diferentes misturaria inflação com diferença de preço.) */
 function anterior(G,i){
   var c=G.compras[i]; if(!c||c.ref==null) return null;
-  var outro=null;
   for(var j=i-1;j>=0;j--){
-    var p=G.compras[j]; if(p.mes>=c.mes||p.ref==null||p.base!==c.base||!comparavel(c.ref,p.ref,c.base)) continue;
-    if(p.mid===c.mid) return {prev:p,v:c.ref/p.ref-1,mesmo:true};
-    if(!outro) outro=p;
+    var p=G.compras[j]; if(p.mid!==c.mid||p.mes>=c.mes||p.ref==null||p.base!==c.base||!comparavel(c.ref,p.ref,c.base)) continue;
+    return {prev:p,v:c.ref/p.ref-1,mesmo:true};
   }
-  return outro?{prev:outro,v:c.ref/outro.ref-1,mesmo:false}:null;
+  return null;
 }
 function comparavel(a,b,base){var r=a/b,lim=base==='un'?2:3;return r<=lim&&r>=1/lim;}
 function tom(v){return v==null?'':Math.abs(v)<0.005?'neu':v>0?'bad':'good';}
@@ -379,28 +403,42 @@ function calc(){
     var cnt={}; G.compras.forEach(function(c){if(c.ref!=null)cnt[c.base]=(cnt[c.base]||0)+1;});
     G.base=Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];})[0]||null;
     G.ultRef={}; G.mercados.forEach(function(m){var a=G.porMercado[m];for(var i=a.length-1;i>=0;i--){if(a[i].ref!=null&&a[i].base===G.base){G.ultRef[m]=a[i];break;}}});
-    var best=null; Object.keys(G.ultRef).forEach(function(m){if(!best||G.ultRef[m].ref<G.ultRef[best].ref)best=m;}); G.maisBarato=best;
+    // preços por mês e mercado (a última compra de cada mercado no mês); o "mais barato" só vale no mesmo mês
+    G.porMes={}; G.compras.forEach(function(x){if(x.ref==null||x.base!==G.base)return;(G.porMes[x.mes]=G.porMes[x.mes]||{})[x.mid]=x;});
+    var mesesG=Object.keys(G.porMes).sort(); G.mesComum=null;
+    for(var k=mesesG.length-1;k>=0;k--){if(Object.keys(G.porMes[mesesG[k]]).length>=2){G.mesComum=mesesG[k];break;}}
+    var best=null; if(G.mesComum){var pm=G.porMes[G.mesComum];Object.keys(pm).forEach(function(m){if(!best||pm[m].ref<pm[best].ref)best=m;});}
+    G.maisBarato=best;
   });
   C={meses:meses,mercados:mercados,grupos:grupos,idx:idx,ranking:ranking(grupos,mercados)};
   return C;
 }
-/* Índice de cesta: para cada produto vendido em 2+ mercados, compara o preço mais recente
-   de cada mercado com a média entre eles. A média geométrica dessas razões é o índice do mercado. */
+function precoMaisBarato(G){return G&&G.maisBarato?G.porMes[G.mesComum][G.maisBarato]:null;}
+/* Onde vale mais a pena: compara o mesmo produto em mercados diferentes SÓ dentro do mesmo mês
+   (a inflação sobe para todos ao mesmo tempo), usando os últimos 3 meses com dados.
+   O índice do mercado é a média geométrica de (preço no mercado / média dos mercados naquele mês). */
 function ranking(grupos,mercados){
-  var acc={};
-  Object.keys(grupos).forEach(function(g){
-    var G=grupos[g], ms=Object.keys(G.ultRef); if(ms.length<2) return;
-    var ps=ms.map(function(m){return G.ultRef[m].ref;});
-    if(!comparavel(Math.max.apply(null,ps),Math.min.apply(null,ps),G.base)) return;
-    var media=ps.reduce(function(a,b){return a+b;},0)/ps.length; if(!(media>0)) return;
-    ms.forEach(function(m){var a=(acc[m]=acc[m]||{log:0,n:0,mais:0,menos:0});var r=G.ultRef[m].ref/media;a.log+=Math.log(r);a.n++;if(r<0.995)a.menos++;else if(r>1.005)a.mais++;});
-  });
-  return Object.keys(acc).map(function(m){var a=acc[m];return {id:m,nome:mercados[m]?mercados[m].nome:nomeMercado(m),indice:Math.exp(a.log/a.n)-1,n:a.n,maisBarato:a.menos,maisCaro:a.mais};})
+  var pares=[];
+  Object.keys(grupos).forEach(function(g){var G=grupos[g];Object.keys(G.porMes||{}).forEach(function(mk){
+    var pm=G.porMes[mk], ms=Object.keys(pm); if(ms.length<2) return;
+    var ps=ms.map(function(m){return pm[m].ref;}); if(!comparavel(Math.max.apply(null,ps),Math.min.apply(null,ps),G.base)) return;
+    pares.push({mk:mk,pm:pm,ms:ms,media:ps.reduce(function(a,b){return a+b;},0)/ps.length});
+  });});
+  if(!pares.length) return [];
+  var ult=pares.map(function(x){return x.mk;}).sort().pop(), corte=addMes(ult,-2);
+  var usar=pares.filter(function(x){return x.mk>=corte;}); if(usar.length<3) usar=pares;
+  var acc={}, de=ult;
+  usar.forEach(function(x){if(x.mk<de)de=x.mk;x.ms.forEach(function(m){var a=(acc[m]=acc[m]||{log:0,n:0,mais:0,menos:0});var r=x.pm[m].ref/x.media;a.log+=Math.log(r);a.n++;if(r<0.995)a.menos++;else if(r>1.005)a.mais++;});});
+  var out=Object.keys(acc).map(function(m){var a=acc[m];return {id:m,nome:mercados[m]?mercados[m].nome:nomeMercado(m),indice:Math.exp(a.log/a.n)-1,n:a.n,maisBarato:a.menos,maisCaro:a.mais};})
     .sort(function(a,b){return a.indice-b.indice;});
+  out.periodo={de:de,ate:ult};
+  return out;
 }
 function comparaPar(a,b){
   var c=calc(), itens=[], log=0;
-  Object.keys(c.grupos).forEach(function(g){var G=c.grupos[g];if(G.ultRef[a]&&G.ultRef[b]&&comparavel(G.ultRef[a].ref,G.ultRef[b].ref,G.base)){var pa=G.ultRef[a].ref,pb=G.ultRef[b].ref;itens.push({g:G,pa:pa,pb:pb,u:uRef(G.base,G.ultRef[a].un)});log+=Math.log(pa/pb);}});
+  // para cada produto, o mês mais recente em que os DOIS mercados venderam
+  Object.keys(c.grupos).forEach(function(g){var G=c.grupos[g],ms=Object.keys(G.porMes||{}).sort();
+    for(var i=ms.length-1;i>=0;i--){var pm=G.porMes[ms[i]];if(pm[a]&&pm[b]){if(comparavel(pm[a].ref,pm[b].ref,G.base)){var pa=pm[a].ref,pb=pm[b].ref;itens.push({g:G,pa:pa,pb:pb,mk:ms[i],u:uRef(G.base,pm[a].un)});log+=Math.log(pa/pb);}break;}}});
   itens.sort(function(x,y){return Math.abs(y.pa-y.pb)-Math.abs(x.pa-x.pb);});
   return {itens:itens,dif:itens.length?Math.exp(log/itens.length)-1:0};
 }
@@ -456,20 +494,19 @@ var V={tab:'inicio',mes:null,busca:'',parA:null,parB:null,pview:'repetidos',rep:
 function mesesComDados(){return Object.keys(calc().meses).sort();}
 function mesAtual(){if(V.mes)return V.mes;var ks=mesesComDados();var h=hojeMes();return ks.indexOf(h)>=0||!ks.length?h:ks[ks.length-1];}
 
-var NAV=[['inicio','Início',I.home],['lista','Lista',I.list],['scan','',I.scan],['produtos','Produtos',I.tag],['mercados','Mercados',I.store]];
-var SIDE=[['inicio','Início',I.home],['lista','Lista de compras',I.list],['notas','Compras',I.receipt],['produtos','Produtos',I.tag],['mercados','Mercados',I.store]];
+var SIDE=[['inicio','Início',I.home],['lista','Lista de compras',I.list],['precos','Comparar preços',I.search],['produtos','Produtos',I.tag],['mercados','Mercados',I.store],['notas','Notas lidas',I.receipt]];
 function renderNav(){
-  document.getElementById('nav').innerHTML=NAV.map(function(n){
-    if(n[0]==='scan') return '<button class="scan" data-act="scan" aria-label="Ler nota">'+n[2]+'</button>';
-    return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]||(V.tab==='precos'&&n[0]==='lista')?'on':'')+'">'+n[2]+'<span>'+n[1]+'</span></button>';
-  }).join('');
+  var abertos=S.lista.filter(function(l){return !l.feito;}).length;
   document.getElementById('side').innerHTML='<div class="brand"><span class="logo">'+I.cart+'</span>Meu Mercado</div>'+
-    SIDE.map(function(n){return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]?'on':'')+'">'+n[2]+n[1]+'</button>';}).join('')+
-    '<button data-act="ajustes">'+I.gear+'Ajustes</button><button class="btn pri" data-act="scan">'+I.scan+' Ler nota</button>';
+    SIDE.map(function(n){return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]?'on':'')+'">'+n[2]+'<span style="flex:1">'+n[1]+'</span>'+(n[0]==='lista'&&abertos?'<span class="badge b-pur">'+abertos+'</span>':'')+'</button>';}).join('')+
+    '<div class="sep"></div><button data-act="scan">'+I.scan+'<span>Ler nota fiscal</span></button><button data-act="ajustes">'+I.gear+'<span>Ajustes e backup</span></button><button data-act="novidades"><span style="width:20px;text-align:center">✨</span><span>Novidades</span></button>';
+  document.getElementById('fabScan').innerHTML=I.scan;
+  document.getElementById('fabScan').style.display=V.tab==='precos'?'none':'';
 }
+function menu(abrir){var sd=document.getElementById('side'),bg=document.getElementById('drawerBg');var on=abrir==null?!sd.classList.contains('open'):abrir;sd.classList.toggle('open',on);bg.classList.toggle('open',on);}
 function topo(titulo,extra){
-  return '<div class="top"><div class="brand"><span class="logo">'+I.cart+'</span>Meu Mercado</div><button class="iconbtn" data-act="ajustes" aria-label="Ajustes">'+I.gear+'</button></div>'+
-    (titulo||extra?'<div class="tline">'+(titulo?'<h1>'+titulo+'</h1>':'')+(extra||'')+'</div>':'');
+  return '<div class="top"><button class="iconbtn menuBtn" data-act="menu" aria-label="Abrir menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>'+(titulo||'Meu Mercado')+'</h1><span style="width:42px"></span></div>'+
+    (extra?'<div class="tline">'+extra+'</div>':'');
 }
 function seletorMes(){
   var mk=mesAtual(), ks=mesesComDados(), min=ks[0]||mk, max=ks[ks.length-1]||mk; if(hojeMes()>max)max=hojeMes();
@@ -494,64 +531,54 @@ function render(){
 var CORES=['#c8f43a','#c77dff','#8f4fd6','#7fd4c4','#f0c46a','#5b5b66'];
 function telaInicio(){
   var c=calc();
-  if(!S.notas.length) return topo('')+vazioGeral();
+  if(!S.notas.length) return topo('Meu Mercado')+vazioGeral();
   var mk=mesAtual(), M=c.meses[mk]||{total:0,notas:[],porMercado:{}}, P=c.meses[addMes(mk,-1)];
-  var dif=P&&P.total?M.total/P.total-1:null;
-  var ticket=M.notas.length?M.total/M.notas.length:0;
-  var vars=variacoesDoMes(mk), cesta=null;
-  if(vars.length){cesta=Math.exp(vars.reduce(function(a,v){return a+Math.log(1+v.v);},0)/vars.length)-1;}
-  var h=topo('Visão do mês',seletorMes())+bannerExemplo()+bannerBackup();
-  h+='<div class="grid4">'+
-   kpi('Gasto no mês',$$(M.total),dif==null?'':'<span class="badge '+(dif>0?'b-bad':'b-good')+'">'+pct(dif)+'</span>',dif==null?'sem mês anterior':'vs '+mesNome(addMes(mk,-1)).split(' ')[0])+
-   kpi('Compras',M.notas.length,'',M.notas.length===1?'nota lida':'notas lidas')+
-   kpi('Ticket médio',$$(ticket),'','por compra')+
-   kpi('Sua cesta',cesta==null?'—':pct(cesta),'',cesta==null?'itens repetidos aparecem aqui':'preço dos itens que você recompra')+
-  '</div>';
-  h+=cardMeta(mk,M.total);
-  // barras
+  var dif=P&&P.total?M.total/P.total-1:null, ticket=M.notas.length?M.total/M.notas.length:0;
+  var h=topo('Início','<div style="margin:0 auto">'+seletorMes()+'</div>')+bannerExemplo()+bannerBackup();
+  // resumo do mês (gasto, comparação e meta num só cartão)
+  h+='<div class="card mb hero"><div class="sub">Gasto em '+mesNome(mk).split(' ')[0]+'</div>'+
+    '<div class="big">'+$$(M.total)+(dif==null?'':'<span class="badge '+(dif>0?'b-bad':'b-good')+'">'+pct(dif)+'</span>')+'</div>'+
+    '<div class="sub">'+M.notas.length+(M.notas.length===1?' compra':' compras')+(M.notas.length?' · média '+$$(ticket):'')+(dif==null?'':' · '+(dif>0?'mais':'menos')+' que em '+mesNome(addMes(mk,-1)).split(' ')[0])+'</div>'+
+    metaInline(mk,M.total)+'</div>';
+  // últimos 6 meses
   var ks=[];for(var i=5;i>=0;i--)ks.push(addMes(mk,-i));
   var max=Math.max.apply(null,ks.map(function(k){return c.meses[k]?c.meses[k].total:0;}).concat([1]));
-  h+='<div class="row2"><div class="card"><div class="chead"><h2>Gastos por mês</h2></div>'+
+  h+='<div class="card mb"><div class="chead"><h2>Últimos meses</h2></div>'+
      '<div class="bars">'+ks.map(function(k){var v=c.meses[k]?c.meses[k].total:0;return '<button class="bar '+(k===mk?'on':'')+'" data-act="irmes" data-mes="'+k+'"><span class="tip">'+$$(v)+'</span><i style="height:'+Math.max(4,v/max*100)+'%"></i></button>';}).join('')+'</div>'+
      '<div class="blabels">'+ks.map(function(k){return '<span class="'+(k===mk?'on':'')+'">'+mesCurto(k)+'</span>';}).join('')+'</div></div>';
-  // rosca
-  var pm=Object.keys(M.porMercado).map(function(id){return {id:id,v:M.porMercado[id]};}).sort(function(a,b){return b.v-a.v;});
-  if(pm.length>5){var resto=pm.slice(4).reduce(function(a,x){return a+x.v;},0);pm=pm.slice(0,4).concat([{id:'_outros',v:resto}]);}
-  var acc=0,grad=pm.map(function(x,i){var a=acc/M.total*360;acc+=x.v;var b=acc/M.total*360;return CORES[i%CORES.length]+' '+a+'deg '+b+'deg';}).join(',');
-  h+='<div class="card"><div class="chead"><h2>Onde você gastou</h2></div>'+(pm.length?
-     '<div class="donutwrap"><div class="donut" style="background:conic-gradient('+grad+')"></div><div class="legend">'+pm.map(function(x,i){return '<div><span class="dot" style="background:'+CORES[i%CORES.length]+'"></span><span class="nm">'+esc(x.id==='_outros'?'Outros':nomeMercado(x.id))+'</span><b>'+Math.round(x.v/M.total*100)+'%</b></div>';}).join('')+'</div></div>'
-     :'<div class="empty">Nenhuma compra neste mês.</div>')+'</div></div>';
-  h+=cardCategorias(M);
-  // variações
-  var mud=vars.filter(function(v){return v.v!==0;}).sort(function(a,b){return Math.abs(b.v)-Math.abs(a.v);}).slice(0,6);
+  h+=cardOndeFoi(M);
+  // preços que mudaram (no mesmo mercado)
+  var mud=variacoesDoMes(mk).filter(function(v){return tom(v.v)!=='neu';}).sort(function(a,b){return Math.abs(b.v)-Math.abs(a.v);});
   if(mud.length){
-    h+='<div class="card mb"><div class="chead"><h2>Preços que mudaram</h2><span class="sub">vs sua compra anterior</span></div><div class="list">'+
-      mud.map(function(v){return '<button class="li" data-act="produto" data-g="'+esc(v.g.id)+'"><div class="tx"><div class="t1">'+esc(nomeG(v.g))+'</div><div class="t2 wrap">'+esc(nomeMercado(v.m))+' · '+$$ref(v.de)+' → '+$$ref(v.para)+'</div></div><span class="badge '+(v.v>0?'b-bad':'b-good')+'">'+pct(v.v)+'</span></button>';}).join('')+'</div></div>';
+    h+='<div class="card mb"><div class="chead"><h2>Preços que mudaram</h2><button class="sub link" data-act="verRepetidos">Ver todos ('+mud.length+') →</button></div><div class="list">'+
+      mud.slice(0,3).map(function(v){var t=tom(v.v);return '<button class="li" data-act="produto" data-g="'+esc(v.g.id)+'"><div class="tx"><div class="t1">'+esc(nomeG(v.g))+'</div><div class="t2 wrap">'+esc(nomeMercado(v.m))+' · '+mesCurto(v.mesAnt)+' '+$$ref(v.de)+' → '+$$ref(v.para)+'</div></div><span class="badge '+(t==='bad'?'b-bad':'b-good')+'">'+pct(v.v)+'</span></button>';}).join('')+'</div></div>';
   }
-  // compras do mês
-  h+='<div class="card"><div class="chead"><h2>Compras do mês</h2><button class="sub" data-tab="notas" style="color:var(--purple);font-weight:600">Ver todas →</button></div>'+listaNotas(M.notas.slice().reverse(),'Nenhuma nota neste mês. Toque no botão verde para ler uma.')+'</div>';
+  h+='<div class="card"><div class="chead"><h2>Compras do mês</h2>'+(M.notas.length>3?'<button class="sub link" data-tab="notas">Ver todas →</button>':'')+'</div>'+listaNotas(M.notas.slice().reverse().slice(0,3),'Nenhuma nota neste mês. Toque no botão verde para ler uma.')+'</div>';
   return h;
 }
-function cardMeta(mk,total){
-  if(!S.meta) return '<button class="card mb" data-act="meta" style="width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px"><span><b>Definir meta de gasto mensal</b><div class="sub">Acompanhe quanto do limite do mês já foi.</div></span><span class="badge b-pur">+ Meta</span></button>';
-  var p=total/S.meta, cor=p>1?'var(--red)':p>=0.8?'#f0c46a':'var(--lime)';
-  var proj='';
-  if(mk===hojeMes()&&total>0){var d=new Date(),dia=d.getDate(),dm=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();if(dia<dm){var pr=total/dia*dm;proj='No ritmo atual, o mês fecha em <b style="color:'+(pr>S.meta?'var(--red)':'var(--lime)')+'">'+$$(pr)+'</b>';}}
-  var resto=S.meta-total;
-  return '<button class="card mb" data-act="meta" style="width:100%;text-align:left"><div class="chead" style="margin-bottom:10px"><h2>Meta do mês</h2><span class="sub">'+$$(total)+' de '+$$(S.meta)+'</span></div>'+
-    '<div class="meter" style="height:10px;margin:0"><i style="width:'+Math.min(100,p*100)+'%;background:'+cor+'"></i></div>'+
-    '<div style="display:flex;justify-content:space-between;gap:10px;margin-top:9px;flex-wrap:wrap"><span class="sub">'+(resto>=0?'Faltam <b style="color:var(--text)">'+$$(resto)+'</b>':'Passou <b style="color:var(--red)">'+$$(-resto)+'</b> da meta')+'</span><span class="sub">'+Math.round(p*100)+'%</span></div>'+
-    (proj?'<div class="sub" style="margin-top:4px">'+proj+'</div>':'')+'</button>';
+function metaInline(mk,total){
+  if(!S.meta) return '<button class="sub link" data-act="meta" style="margin-top:12px;display:block">+ Definir meta de gasto do mês</button>';
+  var p=total/S.meta, cor=p>1?'var(--red)':p>=0.8?'#f0c46a':'var(--lime)', resto=S.meta-total, proj='';
+  if(mk===hojeMes()&&total>0){var d=new Date(),dia=d.getDate(),dm=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();if(dia<dm){var pr=total/dia*dm;proj=' · no ritmo atual fecha em <b style="color:'+(pr>S.meta?'var(--red)':'var(--lime)')+'">'+$$(pr)+'</b>';}}
+  return '<button data-act="meta" style="display:block;width:100%;text-align:left;margin-top:14px"><div class="meter" style="height:8px;margin:0"><i style="width:'+Math.min(100,p*100)+'%;background:'+cor+'"></i></div>'+
+    '<div class="sub" style="margin-top:7px">'+(resto>=0?'Faltam <b style="color:var(--text)">'+$$(resto)+'</b>':'Passou <b style="color:var(--red)">'+$$(-resto)+'</b>')+' da meta de '+$$(S.meta)+proj+'</div></button>';
 }
-function cardCategorias(M){
-  var c=calc(), soma={}, tot=0;
-  M.notas.forEach(function(n){n.itens.forEach(function(it,ii){var ix=c.idx[n.id+'|'+ii];var cat=ix?catDe(c.grupos[ix.g]):catAuto(it.nome);var v=it.vTotal||0;soma[cat]=(soma[cat]||0)+v;tot+=v;});});
+function cardOndeFoi(M){
+  var c=calc(), modo=V.ondeFoi||'mercado', linhas=[], tot=0;
+  if(modo==='mercado'){
+    Object.keys(M.porMercado).forEach(function(id,i){linhas.push({n:nomeMercado(id),v:M.porMercado[id]});});
+  }else{
+    var soma={}; M.notas.forEach(function(n){n.itens.forEach(function(it,ii){var ix=c.idx[n.id+'|'+ii];var cat=ix?catDe(c.grupos[ix.g]):catAuto(it.nome);soma[cat]=(soma[cat]||0)+(it.vTotal||0);});});
+    Object.keys(soma).forEach(function(k){linhas.push({n:k,v:soma[k],cor:CAT_COR[k]});});
+  }
+  linhas.sort(function(a,b){return b.v-a.v;}); linhas.forEach(function(x){tot+=x.v;});
   if(!tot) return '';
-  var ks=Object.keys(soma).sort(function(a,b){return soma[b]-soma[a];}), mx=soma[ks[0]];
-  return '<div class="card mb"><div class="chead"><h2>Por categoria</h2></div>'+ks.map(function(k){
-    return '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px"><span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:'+CAT_COR[k]+'"></span>'+k+'</span><span><b>'+$$(soma[k])+'</b> <span class="sub">'+Math.round(soma[k]/tot*100)+'%</span></span></div>'+
-      '<div class="meter" style="margin-top:6px"><i style="width:'+(soma[k]/mx*100)+'%;background:'+CAT_COR[k]+'"></i></div></div>';
-  }).join('')+'<p class="sub" style="margin:4px 0 0">Para trocar a categoria de um produto, abra ele na aba Produtos.</p></div>';
+  if(linhas.length>6){var resto=linhas.slice(5).reduce(function(a,x){return a+x.v;},0);linhas=linhas.slice(0,5).concat([{n:'Outros',v:resto,cor:'#5b5b66'}]);}
+  var mx=linhas[0].v;
+  return '<div class="card mb"><div class="chead"><h2>Para onde foi</h2><div class="seg mini"><button data-act="ondeFoi" data-v="mercado" class="'+(modo==='mercado'?'on':'')+'">Mercado</button><button data-act="ondeFoi" data-v="categoria" class="'+(modo==='categoria'?'on':'')+'">Categoria</button></div></div>'+
+    linhas.map(function(x,i){var cor=x.cor||CORES[i%CORES.length];
+      return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.n)+'</span><span><b>'+$$(x.v)+'</b> <span class="sub">'+Math.round(x.v/tot*100)+'%</span></span></div>'+
+        '<div class="meter" style="margin-top:5px"><i style="width:'+(x.v/mx*100)+'%;background:'+cor+'"></i></div></div>';}).join('')+'</div>';
 }
 function bannerBackup(){
   var reais=S.notas.filter(function(n){return n.origem!=='exemplo';});
@@ -604,66 +631,32 @@ function sugestoesLista(){
     .map(function(G){return {G:G,r:ritmo(G)};}).filter(function(x){return x.r;})
     .sort(function(a,b){return b.r.razao-a.r.razao;});
 }
-function ondeComprar(itens){
-  var c=calc(), por={};
-  Object.keys(c.mercados).forEach(function(m){por[m]={id:m,n:0,est:0,log:0,nc:0,falta:0,nFalta:0};});
-  var melhorSoma=0, comPreco=0, custos=itens.map(function(G){var q=qtdMedia(G),o={};G.mercados.forEach(function(m){o[m]=q*G.ultimo[m].vUnit;});return o;});
-  itens.forEach(function(G,k){
-    var o=custos[k], vs=Object.keys(o).map(function(m){return o[m];}), media=vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:null;
-    Object.keys(por).forEach(function(m){if(o[m]!=null){por[m].n++;por[m].est+=o[m];}else if(media!=null){por[m].falta+=media;por[m].nFalta++;}});
-    if(vs.length){melhorSoma+=Math.min.apply(null,vs);comPreco++;}
-    var ms=Object.keys(G.ultRef), refs=ms.map(function(m){return G.ultRef[m].ref;}), mr=refs.length?refs.reduce(function(a,b){return a+b;},0)/refs.length:0;
-    if(ms.length>=2&&mr>0&&comparavel(Math.max.apply(null,refs),Math.min.apply(null,refs),G.base)) ms.forEach(function(m){por[m].log+=Math.log(G.ultRef[m].ref/mr);por[m].nc++;});
-  });
-  var lista=Object.keys(por).map(function(m){var x=por[m];x.indice=x.nc?Math.exp(x.log/x.nc)-1:null;x.total=x.est+x.falta;return x;}).filter(function(x){return x.n;})
-    .sort(function(a,b){return a.total-b.total;});
-  return {mercados:lista,melhorSoma:melhorSoma,comPreco:comPreco};
-}
 function telaLista(){
-  var c=calc(), h=topo('Lista de compras')+bannerExemplo();
+  var h=topo('Lista de compras')+bannerExemplo();
   var abertos=S.lista.filter(function(l){return !l.feito;}), feitos=S.lista.filter(function(l){return l.feito;});
-  if(abertos.length){
-    var ult=S.pesquisa?new Date(S.pesquisa.quando):null;
-    h+='<div class="card mb" id="cardPrecos" style="background:linear-gradient(135deg,rgba(200,244,58,.13),rgba(199,125,255,.12)),var(--card);border-color:rgba(200,244,58,.35)"><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><span style="font-size:26px">🔎</span><div><b style="font-size:16px">Comparar preços nos mercados</b><div class="sub">Muffato, Festval, Angeloni e Atacadão perto de você: preço de cada item e o total da lista em cada mercado.</div></div></div>'+
-      '<button class="btn pri full" data-act="pesquisarPrecos">'+I.search.replace('<svg','<svg style="width:18px;height:18px"')+' Comparar os '+abertos.length+' '+(abertos.length===1?'item':'itens')+' agora</button>'+
-      (ult?'<button class="btn full mt" data-tab="precos">Ver última comparação ('+ult.toLocaleDateString('pt-BR').slice(0,5)+' '+ult.toTimeString().slice(0,5)+')</button>':'')+'</div>';
-  }
-  h+='<button class="btn full mb" data-act="importarCardapio" style="justify-content:flex-start;gap:12px;text-align:left"><span style="font-size:20px">🍽️</span><span style="flex:1"><b>Importar do Cardápio da Semana</b><div class="sub" style="font-weight:500">Traz os ingredientes da semana para esta lista</div></span></button>';
-  h+='<div class="card mb"><div style="display:flex;gap:8px"><input id="addLista" placeholder="Adicionar item (ex.: café)" autocomplete="off"><button class="btn pri" data-act="addLivre" style="padding:0 16px;flex:none" aria-label="Adicionar">'+I.plus.replace('<svg','<svg style="width:20px;height:20px"')+'</button></div><div id="addSug"></div></div>';
+  h+='<div class="addrow"><input id="addLista" placeholder="Adicionar item (ex.: café)" autocomplete="off"><button class="btn pri" data-act="addLivre" aria-label="Adicionar">'+I.plus.replace('<svg','<svg style="width:20px;height:20px"')+'</button>'+
+    '<button class="btn" data-act="importarCardapio" aria-label="Importar do Cardápio da Semana" title="Importar do Cardápio da Semana" style="font-size:19px;padding:0 13px">🍽️</button></div><div id="addSug" class="mb"></div>';
+  if(S.pesquisa&&abertos.length){var ult=new Date(S.pesquisa.quando);h+='<button class="linkline" data-tab="precos"><span>Última comparação de preços · '+ult.toLocaleDateString('pt-BR').slice(0,5)+' '+ult.toTimeString().slice(0,5)+'</span><span>→</span></button>';}
   if(!S.lista.length){
-    h+='<div class="card mb"><div class="empty"><b>Sua lista está vazia</b>Adicione itens acima ou toque nas sugestões abaixo. Ao ler a nota, os itens comprados são marcados sozinhos.</div></div>';
+    h+='<div class="card mb"><div class="empty"><b>Sua lista está vazia</b>Digite um produto acima, toque em 🍽️ para trazer os ingredientes do Cardápio da Semana, ou use as sugestões abaixo.</div></div>';
   }else{
-    h+='<div class="card mb"><div class="chead"><h2>'+abertos.length+' '+(abertos.length===1?'item':'itens')+' para comprar</h2>'+(feitos.length?'<button class="sub" data-act="limparFeitos" style="color:var(--purple);font-weight:600">Limpar marcados ('+feitos.length+')</button>':'')+'</div><div class="list">'+
+    h+='<div class="card mb"><div class="chead"><h2>'+abertos.length+' '+(abertos.length===1?'item':'itens')+'</h2>'+(feitos.length?'<button class="sub link" data-act="limparFeitos">Limpar marcados ('+feitos.length+')</button>':'')+'</div><div class="list">'+
       abertos.concat(feitos).map(function(l){
-        var G=grupoDaLista(l), u=G&&G.maisBarato?G.ultRef[G.maisBarato]:null;
-        var extra=(l.qtd?esc(l.qtd)+' · ':'')+(l.orig==='cardapio'?'do cardápio · ':'');
-        var info=extra+(G?(u?'Mais barato: '+esc(nomeMercado(G.maisBarato))+' · '+$$ref(u):esc(nomeMercado(G.mercados[0]))+' · '+$$(G.ultimo[G.mercados[0]].vUnit)):(l.orig==='cardapio'?'ainda não comprado antes':'item avulso'));
+        var G=grupoDaLista(l), u=precoMaisBarato(G);
+        var info=[l.qtd?esc(l.qtd):'', u?'mais barato no '+esc(nomeMercado(G.maisBarato))+' · '+$$ref(u):''].filter(Boolean).join(' · ');
         return '<div class="li litem'+(l.feito?' feito':'')+'"><button class="chk" data-act="toggleLista" data-id="'+esc(l.id)+'" aria-label="Marcar">'+(l.feito?I.check:'')+'</button>'+
-          '<button class="tx" style="text-align:left" '+(G?'data-act="produto" data-g="'+esc(G.id)+'"':'data-act="toggleLista" data-id="'+esc(l.id)+'"')+'><div class="t1">'+esc(G?nomeG(G):l.nome)+'</div><div class="t2 wrap">'+info+'</div></button>'+
+          '<button class="tx" style="text-align:left" '+(G?'data-act="produto" data-g="'+esc(G.id)+'"':'data-act="toggleLista" data-id="'+esc(l.id)+'"')+'><div class="t1">'+esc(G?nomeG(G):l.nome)+'</div>'+(info?'<div class="t2 wrap">'+info+'</div>':'')+'</button>'+
           '<button class="iconbtn" style="width:34px;height:34px;border:0" data-act="tirarLista" data-id="'+esc(l.id)+'" aria-label="Remover">'+I.x.replace('<svg','<svg style="width:16px;height:16px"')+'</button></div>';
       }).join('')+'</div></div>';
-    var gs=abertos.map(grupoDaLista).filter(Boolean);
-    if(gs.length){
-      var o=ondeComprar(gs);
-      h+='<div class="card mb"><div class="chead"><h2>Onde comprar a lista</h2></div><p class="sub" style="margin:-6px 0 12px">Pelas suas notas: do mais barato ao mais caro, com as quantidades que você costuma levar. Item que o mercado não tem entra pela média dos outros.</p>'+
-        o.mercados.slice(0,4).map(function(x,i){
-          return '<div class="rank '+(i===0?'first':'')+'"><span class="pos">'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(nomeMercado(x.id))+'</b>'+(x.indice==null||Math.abs(x.indice)<0.005?'':'<span class="badge '+(x.indice<0?'b-good':'b-bad')+'">'+pct(x.indice)+'</span>')+'</div>'+
-            '<div class="sub">'+(i===0?'<span style="color:var(--lime);font-weight:700">mais barato</span> · ':'')+'~'+$$(x.total)+' a lista · tem '+x.n+' de '+gs.length+(x.nFalta?' ('+x.nFalta+' pela média)':'')+'</div></div></div>';
-        }).join('')+
-        (o.comPreco>1?'<div class="ok mt">Comprando cada item onde está mais barato: <b>~'+$$(o.melhorSoma)+'</b></div>':'')+
-        '<p class="sub mt" style="margin-bottom:0">A porcentagem mostra se o mercado fica acima ou abaixo da média nos itens da lista que dá para comparar.</p></div>';
-    }
   }
-  if(abertos.length) h+='<button class="fixoPrecos" data-act="pesquisarPrecos">'+I.search.replace('<svg','<svg style="width:18px;height:18px"')+' Comparar preços ('+abertos.length+')</button>';
-  var sug=sugestoesLista();
-  if(sug.length){
-    var hora=sug.filter(function(x){return x.r.razao>=0.85;});
-    h+='<div class="card"><div class="chead"><h2>Você costuma comprar</h2>'+(hora.length>1?'<button class="sub" data-act="addHora" style="color:var(--purple);font-weight:600">Adicionar os '+hora.length+' da vez</button>':'')+'</div><div class="list">'+
-      sug.slice(0,15).map(function(x){
-        var r=x.r, vez=r.razao>=0.85;
+  if(abertos.length) h+='<button class="fixoPrecos" data-act="pesquisarPrecos">'+I.search+' Comparar preços nos mercados</button>';
+  var sug=sugestoesLista(), hora=sug.filter(function(x){return x.r.razao>=0.85;}), mostrar=V.sugMais?sug.slice(0,15):hora.slice(0,6);
+  if(mostrar.length||sug.length){
+    h+='<div class="card"><div class="chead"><h2>'+(V.sugMais?'Você costuma comprar':'Hora de repor')+'</h2>'+(!V.sugMais&&hora.length>1?'<button class="sub link" data-act="addHora">Adicionar todos</button>':'')+'</div>'+
+      (mostrar.length?'<div class="list">'+mostrar.map(function(x){var r=x.r;
         return '<div class="li"><div class="tx"><div class="t1">'+esc(nomeG(x.G))+'</div><div class="t2">a cada ~'+Math.max(1,Math.round(r.media))+' dias · última há '+r.desde+' '+(r.desde===1?'dia':'dias')+'</div></div>'+
-          (vez?'<span class="badge b-pur">na hora</span>':'')+'<button class="btn" style="padding:7px 12px;font-size:13px" data-act="addGrupo" data-g="'+esc(x.G.id)+'">'+I.plus.replace('<svg','<svg style="width:15px;height:15px"')+'</button></div>';
-      }).join('')+'</div></div>';
+          '<button class="btn" style="padding:7px 12px;font-size:13px" data-act="addGrupo" data-g="'+esc(x.G.id)+'" aria-label="Adicionar">'+I.plus.replace('<svg','<svg style="width:15px;height:15px"')+'</button></div>';}).join('')+'</div>':'<div class="sub">Nada para repor agora.</div>')+
+      (sug.length>mostrar.length||V.sugMais?'<button class="sub link mt" data-act="sugMais" style="display:block">'+(V.sugMais?'Mostrar só o que está na hora':'Ver mais sugestões')+'</button>':'')+'</div>';
   }
   return h;
 }
@@ -939,16 +932,17 @@ function importarCardapio(){
 }
 
 /* ---------- Novidades da versão ---------- */
-var VERSAO=8;
+var VERSAO=9;
 var NOVIDADES=[
- {e:'⭐',t:'Comparar preços ficou mais fácil',d:'O botão para comparar os preços da sua lista nos mercados agora fica no topo da aba Lista, e também num botão verde fixo enquanto você rola. Depois de importar do Cardápio, o app já oferece a comparação.',ir:{tab:'lista',sel:'#cardPrecos',dica:'Toque em Comparar para ver o preço em cada mercado',precisa:'lista'}},
+ {e:'☰',t:'App mais limpo, com menu',d:'As telas agora ficam no menu do canto de cima. O botão verde redondo lê a nota fiscal de qualquer tela.',ir:{tab:'inicio',sel:'.menuBtn',dica:'Toque aqui para ver todas as telas'}},
+ {e:'⚖️',t:'Comparação mais justa',d:'Mês a mês, cada produto é comparado só com a compra anterior no mesmo mercado. Entre mercados, só com preços do mesmo mês, para a inflação não distorcer.',ir:{tab:'mercados',sel:'.rank',dica:'Ranking com preços do mesmo mês'}},
+ {e:'🔎',t:'Comparar preços da lista',d:'Na Lista, o botão roxo embaixo compara sua lista no Muffato, Festval, Angeloni e Atacadão perto de você, do mais barato ao mais caro.',ir:{tab:'lista',sel:'.fixoPrecos',dica:'Toque para ver quanto a lista custa em cada mercado',precisa:'lista'}},
  {e:'🛒',t:'Lista de compras',d:'Nova aba Lista: adicione itens, veja o mercado mais barato de cada um e sugestões do que você costuma recomprar. Ao ler a nota, o que você comprou é marcado sozinho.',ir:{tab:'lista',sel:'#addLista',dica:'Digite um produto aqui ou toque nas sugestões abaixo'}},
- {e:'🔎',t:'Preços de hoje',d:'Na aba Lista, toque em Comparar preços: o app pesquisa a sua lista nos sites do Muffato, Festval, Angeloni e Atacadão perto de você e mostra o total em cada um, para você ir onde economiza mais.',ir:{tab:'lista',sel:'#cardPrecos [data-act=pesquisarPrecos]',dica:'Toque aqui com a lista pronta',precisa:'lista'}},
- {e:'🍽️',t:'Importar do Cardápio da Semana',d:'Traga os ingredientes do cardápio direto para a lista, sem digitar.',ir:{tab:'lista',sel:'[data-act=importarCardapio]',dica:'Toque aqui para trazer os ingredientes'}},
- {e:'🟢',t:'Preços que subiram e baixaram',d:'Na aba Produtos → Repetidos: verde se baixou, vermelho se subiu, sempre comparando o preço do quilo ou do litro.',ir:{tab:'produtos',pview:'repetidos',sel:'[data-act=rep][data-v=todos]',dica:'Toque em Subiram ou Baixaram para filtrar'}},
+  {e:'🍽️',t:'Importar do Cardápio da Semana',d:'Na Lista, toque em 🍽️ para trazer os ingredientes do cardápio, sem digitar.',ir:{tab:'lista',sel:'[data-act=importarCardapio]',dica:'Toque aqui para trazer os ingredientes'}},
+ {e:'🟢',t:'Preços que subiram e baixaram',d:'Em Produtos → Mudaram de preço: verde se baixou, vermelho se subiu, pelo preço do quilo ou do litro.',ir:{tab:'produtos',pview:'repetidos',sel:'.fchips',dica:'Toque em Subiram ou Baixaram para filtrar'}},
  {e:'📦',t:'Embalagens diferentes separadas',d:'Arroz de 1 kg e de 5 kg com o mesmo nome na nota não são mais misturados. Abra o produto e informe o peso da embalagem para comparar pelo quilo.',ir:{tab:'produtos',pview:'todos',sel:'#busca',dica:'Abra um produto para informar o peso da embalagem'}},
  {e:'🧾',t:'Aviso ao salvar a nota',d:'Logo depois de ler uma nota, aparece o que subiu e o que baixou desde a compra anterior.',ir:{act:'scan'}},
- {e:'🎯',t:'Meta do mês e categorias',d:'No Início: defina uma meta de gasto e veja quanto foi para hortifrúti, carnes, limpeza…',ir:{tab:'inicio',sel:'[data-act=meta]',dica:'Toque aqui para definir sua meta mensal'}},
+ {e:'🎯',t:'Meta do mês e categorias',d:'No Início: defina uma meta de gasto e, em "Para onde foi", veja por mercado ou por categoria.',ir:{tab:'inicio',sel:'[data-act=meta]',dica:'Toque aqui para definir sua meta mensal'}},
  {e:'☁️',t:'Backup em 1 toque',d:'Em Ajustes, envie o backup para o Google Drive, iCloud ou WhatsApp. O app lembra você a cada 7 dias.',ir:{act:'ajustes',sel:'.sheet [data-act=backupJa]',dica:'Toque aqui para guardar uma cópia dos seus dados'}}
 ];
 function verNovidades(){
@@ -984,27 +978,24 @@ function tirarDica(){var b=document.getElementById('dicaBalao');if(b)b.remove();
 
 /* ---------- Produtos ---------- */
 function telaProdutos(){
-  var c=calc(), seg='<div class="seg" style="min-width:230px"><button data-act="pview" data-v="repetidos" class="'+(V.pview==='repetidos'?'on':'')+'">Repetidos</button><button data-act="pview" data-v="todos" class="'+(V.pview==='todos'?'on':'')+'">Todos</button></div>';
-  var h=topo('Produtos',seg)+bannerExemplo();
+  var h=topo('Produtos','<div class="seg" style="width:100%"><button data-act="pview" data-v="repetidos" class="'+(V.pview==='repetidos'?'on':'')+'">Mudaram de preço</button><button data-act="pview" data-v="todos" class="'+(V.pview==='todos'?'on':'')+'">Todos</button></div>')+bannerExemplo();
   if(!S.notas.length) return h+vazioGeral();
-  var sug=sugestoes(), sugH='';
-  if(sug.length){
-    sugH='<div class="suggest'+(V.pview==='repetidos'?' mt':'')+'"><b>Parecem o mesmo produto?</b><div class="sub">Cada mercado escreve o nome de um jeito. Juntando, o app compara o preço entre eles.</div>'+
-      sug.map(function(s){return '<div class="pair">'+esc(nomeG(s.A))+' <span class="sub">('+esc(nomeMercado(s.A.mercados[0]))+')</span><br>'+esc(nomeG(s.B))+' <span class="sub">('+esc(nomeMercado(s.B.mercados[0]))+')</span>'+
-       '<div class="acts"><button class="btn pur" data-act="juntar" data-a="'+esc(s.A.id)+'" data-b="'+esc(s.B.id)+'">São o mesmo</button><button class="btn" data-act="ignorar" data-k="'+esc(s.key)+'">Não são</button></div></div>';}).join('')+'</div>';
-  }
-  if(V.pview!=='repetidos') h+=sugH;
   if(V.pview==='repetidos'){
-    var rs=repetidos(), n={todos:rs.length,subiu:0,baixou:0,igual:0};
-    rs.forEach(function(r){var t=tom(r.a.v);n[t==='bad'?'subiu':t==='good'?'baixou':'igual']++;});
-    h+='<div class="grid4" style="grid-template-columns:repeat(3,1fr)">'+
-      [['todos','Repetidos','b-pur'],['subiu','Subiram','b-bad'],['baixou','Baixaram','b-good']].map(function(f){
-        return '<button class="card kpi filt'+(V.rep===f[0]?' on':'')+'" data-act="rep" data-v="'+f[0]+'" style="text-align:left"><div class="lb">'+f[1]+'</div><div class="v"><span class="badge '+f[2]+'" style="font-size:16px;padding:3px 11px">'+n[f[0]]+'</span></div></button>';
-      }).join('')+'</div>'+
-      '<p class="sub" style="margin:-2px 2px 12px">Compara a última compra de cada produto com a de um mês anterior, pelo preço do <b>quilo</b> ou do <b>litro</b> quando dá para calcular. <span style="color:var(--lime)">Verde</span> = baixou, <span style="color:var(--red)">vermelho</span> = subiu.</p>';
+    var rs=repetidos(), n={todos:rs.length,subiu:0,baixou:0};
+    rs.forEach(function(r){var t=tom(r.a.v);if(t==='bad')n.subiu++;else if(t==='good')n.baixou++;});
+    h+='<div class="fchips">'+[['todos','Todos'],['subiu','▲ Subiram'],['baixou','▼ Baixaram']].map(function(f){return '<button class="fchip '+f[0]+(V.rep===f[0]?' on':'')+'" data-act="rep" data-v="'+f[0]+'">'+f[1]+' <b>'+n[f[0]]+'</b></button>';}).join('')+'</div>'+
+      '<p class="sub" style="margin:0 2px 12px">Última compra vs a anterior <b>no mesmo mercado</b>, pelo preço do quilo/litro.</p>';
   }
   h+='<div class="search">'+I.search+'<input id="busca" placeholder="Buscar produto" value="'+esc(V.busca)+'" autocomplete="off"></div><div id="plist">'+(V.pview==='repetidos'?listaRepetidos():listaProdutos())+'</div>';
-  return h+(V.pview==='repetidos'?sugH:'');
+  var sug=sugestoes();
+  if(sug.length) h+='<button class="linkline mt" data-act="verSugestoes"><span>🔗 '+sug.length+(sug.length===1?' produto parece':' produtos parecem')+' o mesmo em mercados diferentes. Revisar</span><span>→</span></button>';
+  return h;
+}
+function verSugestoes(){
+  var sug=sugestoes(); if(!sug.length){fechar();render();return;}
+  abrir(shead('Parecem o mesmo produto?')+'<p class="sub" style="margin:-6px 0 12px">Cada mercado escreve o nome de um jeito. Juntando, o app compara o preço entre eles.</p>'+
+    sug.map(function(s){return '<div class="card mb" style="padding:14px">'+esc(nomeG(s.A))+' <span class="sub">('+esc(nomeMercado(s.A.mercados[0]))+')</span><br>'+esc(nomeG(s.B))+' <span class="sub">('+esc(nomeMercado(s.B.mercados[0]))+')</span>'+
+      '<div class="acts" style="display:flex;gap:8px;margin-top:10px"><button class="btn pur" style="padding:8px 14px;font-size:13px" data-act="juntar" data-a="'+esc(s.A.id)+'" data-b="'+esc(s.B.id)+'">São o mesmo</button><button class="btn" style="padding:8px 14px;font-size:13px" data-act="ignorar" data-k="'+esc(s.key)+'">Não são</button></div></div>';}).join(''));
 }
 function listaRepetidos(){
   var q=norm(V.busca), rs=repetidos().filter(function(r){
@@ -1018,7 +1009,7 @@ function listaRepetidos(){
   return '<div class="card"><div class="list">'+rs.map(function(r){
     var t=tom(r.a.v), p=r.a.prev, x=r.c, pacote=x.base!=='un'&&Math.abs(x.ref-x.vUnit)>0.005;
     return '<button class="li rep '+t+'" data-act="produto" data-g="'+esc(r.G.id)+'"><div class="tx"><div class="t1">'+esc(nomeG(r.G))+'</div>'+
-      '<div class="t2 wrap">'+mesCurto(p.mes)+': '+$$ref(p)+(r.a.mesmo?'':' em '+esc(nomeMercado(p.mid)))+' → '+mesCurto(x.mes)+' · '+esc(nomeMercado(x.mid))+(pacote?' · pacote '+$$(x.vUnit):'')+'</div></div>'+
+      '<div class="t2 wrap">'+esc(nomeMercado(x.mid))+' · '+mesCurto(p.mes)+' '+$$ref(p)+' → '+mesCurto(x.mes)+(pacote?' · pacote '+$$(x.vUnit):'')+'</div></div>'+
       '<div class="vv"><div class="pr '+t+'">'+$$ref(x)+'</div><span class="badge '+(t==='bad'?'b-bad':t==='good'?'b-good':'b-neu')+'">'+(t==='neu'?'igual':pct(r.a.v))+'</span></div></button>';
   }).join('')+'</div></div>';
 }
@@ -1028,7 +1019,7 @@ function listaProdutos(){
   gs.sort(function(a,b){return (b.mercados.length-a.mercados.length)||(b.compras.length-a.compras.length)||a.nome.localeCompare(b.nome);});
   if(!gs.length) return '<div class="empty">Nenhum produto encontrado.</div>';
   return '<div class="card"><div class="list">'+gs.slice(0,250).map(function(G){
-    var u=G.maisBarato?G.ultRef[G.maisBarato]:G.ultimo[G.mercados[0]]; var multi=Object.keys(G.ultRef).length>1;
+    var mb=precoMaisBarato(G), u=mb||G.ultimo[G.mercados[G.mercados.length-1]], multi=!!mb;
     return '<button class="li" data-act="produto" data-g="'+esc(G.id)+'"><div class="tx"><div class="t1">'+esc(nomeG(G))+'</div><div class="t2">'+(multi?'Mais barato: '+esc(nomeMercado(G.maisBarato)):esc(nomeMercado(u.mid)))+' · '+G.compras.length+'x comprado</div></div>'+
       '<div class="vv">'+(u.ref!=null?$$(u.ref)+'<div class="sub">'+uRef(u.base,u.un)+'</div>':$$(u.vUnit)+'<div class="sub">/'+esc((u.un||'un').toLowerCase())+'</div>')+'</div></button>';
   }).join('')+'</div></div>';
@@ -1039,15 +1030,15 @@ function telaMercados(){
   var c=calc(), h=topo('Mercados')+bannerExemplo();
   if(!S.notas.length) return h+vazioGeral();
   var r=c.ranking;
-  h+='<div class="card mb"><div class="chead"><h2>Onde vale mais a pena</h2></div><p class="sub" style="margin:-6px 0 14px">Compara o último preço de cada produto que você comprou em mais de um mercado. O número mostra quanto o mercado fica, em média, acima ou abaixo da média dos outros.</p>';
+  h+='<div class="card mb"><div class="chead"><h2>Onde vale mais a pena</h2></div><p class="sub" style="margin:-6px 0 14px">Mesmo produto, <b>mesmo mês</b>, mercados diferentes'+(r.periodo?' ('+(r.periodo.de===r.periodo.ate?mesNome(r.periodo.ate):mesCurto(r.periodo.de)+' a '+mesCurto(r.periodo.ate))+')':'')+'. Assim a inflação, que sobe para todos, não distorce a comparação.</p>';
   if(!r.length){
-    h+='<div class="empty"><b>Ainda não dá para comparar</b>Leia notas de pelo menos 2 mercados com produtos em comum. Se o mesmo produto tiver nomes diferentes, junte-os na aba Produtos.</div>';
+    h+='<div class="empty"><b>Ainda não dá para comparar</b>Leia notas de 2 mercados diferentes no mesmo mês, com produtos em comum.</div>';
   }else{
     var mx=Math.max.apply(null,r.map(function(x){return Math.abs(x.indice);}).concat([0.01]));
     h+=r.map(function(x,i){
       var good=x.indice<0;
       return '<div class="rank '+(i===0?'first':'')+'"><span class="pos">'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.nome)+'</b><span class="badge '+(Math.abs(x.indice)<0.005?'b-neu':good?'b-good':'b-bad')+'">'+pct(x.indice)+'</span></div>'+
-        '<div class="sub">'+x.n+' produtos comparados · mais barato em '+x.maisBarato+', mais caro em '+x.maisCaro+'</div>'+
+        '<div class="sub">'+x.n+' comparações · mais barato em '+x.maisBarato+', mais caro em '+x.maisCaro+'</div>'+
         '<div class="meter"><i style="width:'+Math.max(4,Math.abs(x.indice)/mx*100)+'%;background:'+(good?'var(--lime)':'var(--red)')+'"></i></div></div></div>';
     }).join('');
   }
@@ -1059,16 +1050,16 @@ function telaMercados(){
     var p=comparaPar(V.parA,V.parB), nA=nomeMercado(V.parA), nB=nomeMercado(V.parB);
     var opt=function(sel){return ms.map(function(m){return '<option value="'+esc(m.id)+'" '+(m.id===sel?'selected':'')+'>'+esc(m.nome)+'</option>';}).join('');};
     h+='<div class="card mb"><div class="chead"><h2>Comparar dois mercados</h2></div><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center"><select id="parA">'+opt(V.parA)+'</select><span class="sub">vs</span><select id="parB">'+opt(V.parB)+'</select></div>';
-    if(!p.itens.length) h+='<div class="empty">Esses dois mercados ainda não têm produtos em comum.</div>';
+    if(!p.itens.length) h+='<div class="empty">Esses dois mercados ainda não têm produtos comprados no mesmo mês.</div>';
     else{
       h+='<div class="ok mt" style="'+(p.dif>0?'background:var(--redBg);color:#ffc2c8;border-color:rgba(255,107,122,.3)':'')+'">'+
-        (Math.abs(p.dif)<0.005?'Os dois empatam nos '+p.itens.length+' produtos em comum.':'<b>'+esc(nA)+'</b> sai <b>'+pct(Math.abs(p.dif)).replace('+','')+(p.dif>0?' mais caro':' mais barato')+'</b> que '+esc(nB)+' nos '+p.itens.length+' produtos em comum.')+'</div>'+
+        (Math.abs(p.dif)<0.005?'Os dois empatam nos '+p.itens.length+' produtos em comum.':'<b>'+esc(nA)+'</b> sai <b>'+pct(Math.abs(p.dif)).replace('+','')+(p.dif>0?' mais caro':' mais barato')+'</b> que '+esc(nB)+' nos '+p.itens.length+' produtos em comum, comparando compras do mesmo mês.')+'</div>'+
         '<table class="ptable mt"><tr><th>Produto</th><th class="r">'+esc(nA.split(' ')[0])+'</th><th class="r">'+esc(nB.split(' ')[0])+'</th></tr>'+
-        p.itens.slice(0,40).map(function(x){var aw=x.pa<x.pb,bw=x.pb<x.pa,u=x.u!=='/un'?'<span class="un">'+x.u+'</span>':'';return '<tr><td>'+esc(nomeG(x.g))+'</td><td class="r" style="'+(aw?'color:var(--lime);font-weight:700':'')+'">'+$$(x.pa)+u+'</td><td class="r" style="'+(bw?'color:var(--lime);font-weight:700':'')+'">'+$$(x.pb)+u+'</td></tr>';}).join('')+'</table>';
+        p.itens.slice(0,40).map(function(x){var aw=x.pa<x.pb,bw=x.pb<x.pa,u=x.u!=='/un'?'<span class="un">'+x.u+'</span>':'';return '<tr><td>'+esc(nomeG(x.g))+'<div class="sub" style="font-size:11.5px">'+mesNome(x.mk)+'</div></td><td class="r" style="'+(aw?'color:var(--lime);font-weight:700':'')+'">'+$$(x.pa)+u+'</td><td class="r" style="'+(bw?'color:var(--lime);font-weight:700':'')+'">'+$$(x.pb)+u+'</td></tr>';}).join('')+'</table>';
     }
     h+='</div>';
   }
-  h+='<div class="card"><div class="chead"><h2>Seus mercados</h2></div><div class="list">'+ms.map(function(m){return '<button class="li" data-act="renomear" data-id="'+esc(m.id)+'"><span class="ic">'+esc(iniciais(m.nome))+'</span><div class="tx"><div class="t1">'+esc(m.nome)+'</div><div class="t2">'+m.compras+' compras · última em '+dataBR(m.ultima)+' · toque para renomear</div></div><div class="vv">'+$$(m.total)+'</div></button>';}).join('')+'</div></div>';
+  h+='<div class="card"><div class="chead"><h2>Seus mercados</h2><span class="sub">toque para renomear</span></div><div class="list">'+ms.map(function(m){return '<button class="li" data-act="renomear" data-id="'+esc(m.id)+'"><span class="ic">'+esc(iniciais(m.nome))+'</span><div class="tx"><div class="t1">'+esc(m.nome)+'</div><div class="t2">'+m.compras+' compras · última em '+dataBR(m.ultima)+'</div></div><div class="vv">'+$$(m.total)+'</div></button>';}).join('')+'</div></div>';
   return h;
 }
 
@@ -1107,9 +1098,10 @@ function verProduto(gid){
   if(G.id.indexOf('#')>=0&&!pw) h+='<div class="banner" style="background:rgba(240,196,106,.12);border-color:rgba(240,196,106,.35);display:block">Este mercado usa o <b>mesmo nome</b> para embalagens diferentes (ex.: 1 kg e 5 kg). O app separou pelo código do produto. Informe o peso desta embalagem para comparar pelo quilo.</div>';
   if(pw||semPeso) h+='<button class="btn full mb" data-act="peso" data-g="'+esc(G.id)+'">'+(pw?'Embalagem: <b>'+fmtTam(pw)+'</b> · alterar':'Informar peso/volume da embalagem')+'</button>';
   h+=spark(G);
+  if(G.maisBarato) h+='<p class="sub mt" style="margin-bottom:0">Comparando compras do mesmo mês ('+mesNome(G.mesComum)+'): mais barato no <b style="color:var(--lime)">'+esc(nomeMercado(G.maisBarato))+'</b>.</p>';
   h+='<table class="ptable mt"><tr><th>Mercado</th><th class="r">Último</th><th class="r">Menor</th><th class="r">Maior</th></tr>'+ms.map(function(m,i){
     var u=G.ultRef[m], a=G.porMercado[m].filter(val).map(function(c){return c.ref;}), suf=G.base&&G.base!=='un'?'<span class="un">'+uRef(G.base)+'</span>':'';
-    return '<tr><td>'+(Object.keys(G.ultRef).length>1&&m===G.maisBarato?'<span class="badge b-good" style="margin-right:6px">melhor</span>':'')+esc(nomeMercado(m))+'<div class="sub">'+dataBR((u||G.ultimo[m]).data)+'</div></td><td class="r"><b>'+(u?$$(u.ref)+suf:$$(G.ultimo[m].vUnit))+'</b></td><td class="r">'+(a.length?$$(Math.min.apply(null,a)):'—')+'</td><td class="r">'+(a.length?$$(Math.max.apply(null,a)):'—')+'</td></tr>';
+    return '<tr><td>'+(m===G.maisBarato?'<span class="badge b-good" style="margin-right:6px">melhor</span>':'')+esc(nomeMercado(m))+'<div class="sub">'+dataBR((u||G.ultimo[m]).data)+'</div></td><td class="r"><b>'+(u?$$(u.ref)+suf:$$(G.ultimo[m].vUnit))+'</b></td><td class="r">'+(a.length?$$(Math.min.apply(null,a)):'—')+'</td><td class="r">'+(a.length?$$(Math.max.apply(null,a)):'—')+'</td></tr>';
   }).join('')+'</table>';
   var hist=[];for(var i=G.compras.length-1;i>=0&&hist.length<30;i--)hist.push(i);
   h+='<h2 class="mt" style="font-size:16px;margin-top:20px">Histórico</h2><div class="list">'+hist.map(function(i){
@@ -1231,7 +1223,7 @@ function resumoNota(n,mk,marcados){
   abrir(shead('Nota salva')+
     '<div class="ok">Salva em <b>'+mesNome(mk)+'</b>.'+(marcados?' '+marcados+(marcados===1?' item da sua lista foi marcado':' itens da sua lista foram marcados')+' como comprado.':'')+'</div>'+
     '<div class="grid4 mt" style="grid-template-columns:repeat(3,1fr)">'+kpi('Subiram','<span style="color:var(--red)">'+sub.length+'</span>','','')+kpi('Baixaram','<span style="color:var(--lime)">'+bai.length+'</span>','','')+kpi('Iguais',igual,'','')+'</div>'+
-    '<p class="sub" style="margin:0 0 6px">Comparado com a sua compra em um mês anterior, pelo preço do kg/litro quando dá.</p>'+
+    '<p class="sub" style="margin:0 0 6px">Comparado com a sua compra anterior no mesmo mercado, pelo preço do kg/litro quando dá.</p>'+
     (sub.length?'<h2 class="mt" style="font-size:16px">Subiram</h2><div class="list">'+sub.slice(0,6).map(function(x){return linha(x,'bad');}).join('')+'</div>':'')+
     (bai.length?'<h2 class="mt" style="font-size:16px">Baixaram</h2><div class="list">'+bai.slice(0,6).map(function(x){return linha(x,'good');}).join('')+'</div>':'')+
     '<div class="stack mt"><button class="btn full" data-act="nota" data-id="'+esc(n.id)+'">Ver a nota inteira</button><button class="btn pri full" data-act="fechar">Fechar</button></div>');
@@ -1308,6 +1300,7 @@ var tt;function toast(m){var t=document.getElementById('toast');t.textContent=m;
 document.addEventListener('click',function(e){
   if(V.dicaEl&&!e.target.closest('#dicaBalao')) tirarDica();
   var t=e.target.closest('[data-tab],[data-act]'); if(!t) { if(e.target.id==='overlay') fechar(); return; }
+  if(t.closest('#side')&&t.dataset.act!=='menu') menu(false);
   if(t.dataset.tab){V.tab=t.dataset.tab;fechar();render();window.scrollTo(0,0);return;}
   var a=t.dataset.act;
   switch(a){
@@ -1384,8 +1377,13 @@ document.addEventListener('click',function(e){
       break;
     case 'pview': V.pview=t.dataset.v; render(); break;
     case 'rep': V.rep=t.dataset.v; render(); break;
-    case 'juntar': var c=calc(); juntar(c.grupos[t.dataset.a],c.grupos[t.dataset.b]); render(); toast('Produtos juntados'); break;
-    case 'ignorar': S.ignorados[t.dataset.k]=1; save(); render(); break;
+    case 'juntar': var c=calc(); juntar(c.grupos[t.dataset.a],c.grupos[t.dataset.b]); render(); verSugestoes(); toast('Produtos juntados'); break;
+    case 'ignorar': S.ignorados[t.dataset.k]=1; save(); render(); verSugestoes(); break;
+    case 'verSugestoes': verSugestoes(); break;
+    case 'menu': menu(); break;
+    case 'ondeFoi': V.ondeFoi=t.dataset.v; render(); break;
+    case 'verRepetidos': V.tab='produtos'; V.pview='repetidos'; V.rep='todos'; render(); window.scrollTo(0,0); break;
+    case 'sugMais': V.sugMais=!V.sugMais; render(); break;
     case 'separar': separar(calc().grupos[t.dataset.g]); fechar(); render(); toast('Nomes separados'); break;
     case 'renomear': var atual=nomeMercado(t.dataset.id); var novo=prompt('Nome do mercado:',atual); if(novo&&novo.trim()){S.nomes[t.dataset.id]=novo.trim();save();render();} break;
   }
