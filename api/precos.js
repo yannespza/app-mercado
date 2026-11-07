@@ -10,7 +10,9 @@ const LOJAS = {
   'muffato-taruma': { host: 'https://www.supermuffato.com.br', sc: 18 },
   'muffato-sjp': { host: 'https://www.supermuffato.com.br', sc: 11 },
   'angeloni': { host: 'https://super.angeloni.com.br', sc: 1 },
-  'atacadao': { host: 'https://www.atacadao.com.br', sc: 1, simular: true }
+  'atacadao': { host: 'https://www.atacadao.com.br', sc: 1, simular: true },
+  // Festval: o preço e o estoque reais vêm da loja online de Curitiba (vendedor "meufestvaldark")
+  'festval': { host: 'https://www.festval.com', sc: 1, simular: true, seller: 'meufestvaldark' }
 };
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36',
@@ -49,7 +51,7 @@ async function busca(L, filtro) {
 
 async function simula(L, cands, cep) {
   if (!cands.length) return;
-  const body = { items: cands.map(c => ({ id: c.sku, quantity: 1, seller: c.seller || '1' })), country: 'BRA', postalCode: cep };
+  const body = { items: cands.map(c => ({ id: c.sku, quantity: 1, seller: L.seller || c.seller || '1' })), country: 'BRA', postalCode: cep };
   const j = await getJSON(L.host + '/api/checkout/pub/orderForms/simulation?sc=' + L.sc, {
     method: 'POST', headers: Object.assign({}, HEADERS, { 'Content-Type': 'application/json' }), body: JSON.stringify(body)
   });
@@ -58,6 +60,7 @@ async function simula(L, cands, cep) {
     const c = cands[i.requestIndex != null ? i.requestIndex : k]; if (!c) return;
     if (i.sellingPrice > 0) c.preco = i.sellingPrice / 100;
     c.disp = i.availability === 'available';
+    if (L.seller && !(i.sellingPrice > 0)) c.disp = false;
   });
 }
 

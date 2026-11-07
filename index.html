@@ -606,17 +606,17 @@ function sugestoesLista(){
 }
 function ondeComprar(itens){
   var c=calc(), por={};
-  Object.keys(c.mercados).forEach(function(m){por[m]={id:m,n:0,est:0,log:0,nc:0};});
-  var melhorSoma=0, comPreco=0;
-  itens.forEach(function(G){
-    var q=qtdMedia(G), ms=Object.keys(G.ultRef), refs=ms.map(function(m){return G.ultRef[m].ref;});
-    var media=refs.length?refs.reduce(function(a,b){return a+b;},0)/refs.length:0, menor=null;
-    G.mercados.forEach(function(m){var e=q*G.ultimo[m].vUnit;por[m].n++;por[m].est+=e;if(menor==null||e<menor)menor=e;});
-    if(menor!=null){melhorSoma+=menor;comPreco++;}
-    if(ms.length>=2&&media>0&&comparavel(Math.max.apply(null,refs),Math.min.apply(null,refs),G.base)) ms.forEach(function(m){por[m].log+=Math.log(G.ultRef[m].ref/media);por[m].nc++;});
+  Object.keys(c.mercados).forEach(function(m){por[m]={id:m,n:0,est:0,log:0,nc:0,falta:0,nFalta:0};});
+  var melhorSoma=0, comPreco=0, custos=itens.map(function(G){var q=qtdMedia(G),o={};G.mercados.forEach(function(m){o[m]=q*G.ultimo[m].vUnit;});return o;});
+  itens.forEach(function(G,k){
+    var o=custos[k], vs=Object.keys(o).map(function(m){return o[m];}), media=vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:null;
+    Object.keys(por).forEach(function(m){if(o[m]!=null){por[m].n++;por[m].est+=o[m];}else if(media!=null){por[m].falta+=media;por[m].nFalta++;}});
+    if(vs.length){melhorSoma+=Math.min.apply(null,vs);comPreco++;}
+    var ms=Object.keys(G.ultRef), refs=ms.map(function(m){return G.ultRef[m].ref;}), mr=refs.length?refs.reduce(function(a,b){return a+b;},0)/refs.length:0;
+    if(ms.length>=2&&mr>0&&comparavel(Math.max.apply(null,refs),Math.min.apply(null,refs),G.base)) ms.forEach(function(m){por[m].log+=Math.log(G.ultRef[m].ref/mr);por[m].nc++;});
   });
-  var lista=Object.keys(por).map(function(m){var x=por[m];x.indice=x.nc?Math.exp(x.log/x.nc)-1:null;return x;}).filter(function(x){return x.n;})
-    .sort(function(a,b){return (b.n-a.n)||((a.indice==null?0:a.indice)-(b.indice==null?0:b.indice));});
+  var lista=Object.keys(por).map(function(m){var x=por[m];x.indice=x.nc?Math.exp(x.log/x.nc)-1:null;x.total=x.est+x.falta;return x;}).filter(function(x){return x.n;})
+    .sort(function(a,b){return a.total-b.total;});
   return {mercados:lista,melhorSoma:melhorSoma,comPreco:comPreco};
 }
 function telaLista(){
@@ -624,7 +624,7 @@ function telaLista(){
   var abertos=S.lista.filter(function(l){return !l.feito;}), feitos=S.lista.filter(function(l){return l.feito;});
   if(abertos.length){
     var ult=S.pesquisa?new Date(S.pesquisa.quando):null;
-    h+='<div class="card mb" id="cardPrecos" style="background:linear-gradient(135deg,rgba(200,244,58,.13),rgba(199,125,255,.12)),var(--card);border-color:rgba(200,244,58,.35)"><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><span style="font-size:26px">🔎</span><div><b style="font-size:16px">Comparar preços nos mercados</b><div class="sub">Muffato, Angeloni e Atacadão perto de você: preço de cada item e o total da lista em cada mercado.</div></div></div>'+
+    h+='<div class="card mb" id="cardPrecos" style="background:linear-gradient(135deg,rgba(200,244,58,.13),rgba(199,125,255,.12)),var(--card);border-color:rgba(200,244,58,.35)"><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><span style="font-size:26px">🔎</span><div><b style="font-size:16px">Comparar preços nos mercados</b><div class="sub">Muffato, Festval, Angeloni e Atacadão perto de você: preço de cada item e o total da lista em cada mercado.</div></div></div>'+
       '<button class="btn pri full" data-act="pesquisarPrecos">'+I.search.replace('<svg','<svg style="width:18px;height:18px"')+' Comparar os '+abertos.length+' '+(abertos.length===1?'item':'itens')+' agora</button>'+
       (ult?'<button class="btn full mt" data-tab="precos">Ver última comparação ('+ult.toLocaleDateString('pt-BR').slice(0,5)+' '+ult.toTimeString().slice(0,5)+')</button>':'')+'</div>';
   }
@@ -645,10 +645,10 @@ function telaLista(){
     var gs=abertos.map(grupoDaLista).filter(Boolean);
     if(gs.length){
       var o=ondeComprar(gs);
-      h+='<div class="card mb"><div class="chead"><h2>Onde comprar a lista</h2></div><p class="sub" style="margin:-6px 0 12px">Estimativa com as quantidades que você costuma levar e o último preço de cada mercado.</p>'+
+      h+='<div class="card mb"><div class="chead"><h2>Onde comprar a lista</h2></div><p class="sub" style="margin:-6px 0 12px">Pelas suas notas: do mais barato ao mais caro, com as quantidades que você costuma levar. Item que o mercado não tem entra pela média dos outros.</p>'+
         o.mercados.slice(0,4).map(function(x,i){
           return '<div class="rank '+(i===0?'first':'')+'"><span class="pos">'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(nomeMercado(x.id))+'</b>'+(x.indice==null||Math.abs(x.indice)<0.005?'':'<span class="badge '+(x.indice<0?'b-good':'b-bad')+'">'+pct(x.indice)+'</span>')+'</div>'+
-            '<div class="sub">tem '+x.n+' de '+gs.length+' itens · ~'+$$(x.est)+' por eles</div></div></div>';
+            '<div class="sub">'+(i===0?'<span style="color:var(--lime);font-weight:700">mais barato</span> · ':'')+'~'+$$(x.total)+' a lista · tem '+x.n+' de '+gs.length+(x.nFalta?' ('+x.nFalta+' pela média)':'')+'</div></div></div>';
         }).join('')+
         (o.comPreco>1?'<div class="ok mt">Comprando cada item onde está mais barato: <b>~'+$$(o.melhorSoma)+'</b></div>':'')+
         '<p class="sub mt" style="margin-bottom:0">A porcentagem mostra se o mercado fica acima ou abaixo da média nos itens da lista que dá para comparar.</p></div>';
@@ -687,8 +687,11 @@ var LOJAS=[
  {id:'muffato-taruma',rede:'Muffato',nome:'Muffato Tarumã',pts:[[-25.42910,-49.22952]]},
  {id:'muffato-sjp',rede:'Muffato',nome:'Muffato S. J. dos Pinhais',pts:[[-25.53975,-49.19543]]},
  {id:'angeloni',rede:'Angeloni',nome:'Angeloni',obs:'preço da loja online (Bigorrilho)',pts:[[-25.43874,-49.29504],[-25.45437,-49.28876],[-25.43488,-49.30682]]},
- {id:'atacadao',rede:'Atacadão',nome:'Atacadão',obs:'preço de Curitiba',pts:[[-25.39871,-49.21438],[-25.45080,-49.24325],[-25.46412,-49.30142],[-25.38947,-49.23657],[-25.51345,-49.25759],[-25.41529,-49.35206]]}
+ {id:'atacadao',rede:'Atacadão',nome:'Atacadão',obs:'preço de Curitiba',pts:[[-25.39871,-49.21438],[-25.45080,-49.24325],[-25.46412,-49.30142],[-25.38947,-49.23657],[-25.51345,-49.25759],[-25.41529,-49.35206]]},
+ {id:'festval',rede:'Festval',nome:'Festval',obs:'preço da loja online de Curitiba',pts:[[-25.41403,-49.25985],[-25.40721,-49.25132],[-25.42194,-49.24803],[-25.41112,-49.27144],[-25.43304,-49.27718],[-25.43875,-49.26568],[-25.42759,-49.28453],[-25.44099,-49.28244],[-25.45061,-49.28768],[-25.47033,-49.28454]]}
 ];
+var PREFERIDOS={'Muffato':1,'Festval':1,'Jacomar':1,'Condor':1};
+function preferida(L){return !!PREFERIDOS[L.rede];}
 function lojaInfo(id){for(var i=0;i<LOJAS.length;i++)if(LOJAS[i].id===id)return LOJAS[i];return {id:id,nome:id,pts:[]};}
 function distKm(a,b){var R=6371,r=Math.PI/180,dLa=(b[0]-a[0])*r,dLo=(b[1]-a[1])*r,x=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLo/2)*Math.sin(dLo/2);return 2*R*Math.asin(Math.sqrt(x));}
 function distLoja(L,pos){if(!pos)return null;var m=null;L.pts.forEach(function(p){var d=distKm(pos,p);if(m==null||d<m)m=d;});return m;}
@@ -762,7 +765,7 @@ function localizacao(){
 }
 function lojasPerto(pos){
   var raio=S.raio||10;
-  var ls=LOJAS.map(function(L){return {L:L,d:distLoja(L,pos)};});
+  var ls=LOJAS.filter(function(L){return !S.soPref||preferida(L);}).map(function(L){return {L:L,d:distLoja(L,pos)};});
   if(pos){ls.sort(function(a,b){return a.d-b.d;});var dentro=ls.filter(function(x){return raio>=99||x.d<=raio;});ls=dentro.length>=2?dentro:ls.slice(0,3);}
   return ls;
 }
@@ -808,14 +811,15 @@ function resumoPesquisa(P,its){
   var tab=ativas.map(function(x){
     var tot=0,n=0,custos={};
     its.forEach(function(it){var e=escolhido(P,it,x.id);if(e){var v=custo(it,e.c);custos[it.id]=v;tot+=v;n++;}});
-    return {id:x.id,d:x.d,tot:tot,n:n,custos:custos};
+    return {id:x.id,d:x.d,tot:tot,n:n,custos:custos,est:0,nEst:0};
   });
-  var comum=its.filter(function(it){return tab.length&&tab.every(function(t){return t.custos[it.id]!=null;});});
-  tab.forEach(function(t){t.comum=comum.reduce(function(a,it){return a+t.custos[it.id];},0);});
-  var usaComum=comum.length>=Math.max(1,Math.ceil(its.length/2));
-  tab.sort(function(a,b){return usaComum?(a.comum-b.comum):((b.n-a.n)||(a.tot-b.tot));});
+  // item que uma loja não tem entra pelo preço médio das lojas que têm, para comparar a lista inteira de forma justa
+  var media={};
+  its.forEach(function(it){var vs=tab.map(function(t){return t.custos[it.id];}).filter(function(v){return v!=null;});if(vs.length)media[it.id]=vs.reduce(function(a,b){return a+b;},0)/vs.length;});
+  tab.forEach(function(t){its.forEach(function(it){if(t.custos[it.id]==null&&media[it.id]!=null){t.est+=media[it.id];t.nEst++;}});t.total=t.tot+t.est;});
+  tab.sort(function(a,b){return a.total-b.total;});
   var melhor=0,achados=0; its.forEach(function(it){var m=null;tab.forEach(function(t){var v=t.custos[it.id];if(v!=null&&(m==null||v<m))m=v;});if(m!=null){melhor+=m;achados++;}});
-  return {tab:tab,comum:comum,usaComum:usaComum,melhor:melhor,achados:achados};
+  return {tab:tab,melhor:melhor,achados:achados,comPreco:Object.keys(media).length};
 }
 function telaPrecos(){
   var h='<div class="top"><button class="iconbtn" data-tab="lista" aria-label="Voltar">'+I.left+'</button><div class="brand" style="font-size:17px">Preços de hoje</div><button class="iconbtn" data-act="pesquisarPrecos" aria-label="Atualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg></button></div>';
@@ -829,15 +833,16 @@ function telaPrecos(){
   var dt=new Date(P.quando);
   h+='<div class="card mb"><div class="chead" style="margin-bottom:8px"><h2 style="font-size:16px">'+(P.pos?'Lojas perto de você':'Todas as lojas')+'</h2><span class="sub">'+dt.toLocaleDateString('pt-BR')+' '+dt.toTimeString().slice(0,5)+'</span></div>'+
     (P.pos?'':'<p class="sub" style="margin:0 0 10px">'+(P.semLocal==='negada'?'A localização foi negada. Libere a localização para o app nas configurações do navegador para filtrar por distância.':'Não consegui pegar sua localização, então mostro todas as lojas.')+'</p>')+
-    '<div class="seg">'+[[5,'5 km'],[10,'10 km'],[20,'20 km'],[99,'Todas']].map(function(r){return '<button data-act="raio" data-v="'+r[0]+'" class="'+((S.raio||10)===r[0]?'on':'')+'">'+r[1]+'</button>';}).join('')+'</div></div>';
+    '<div class="seg">'+[[5,'5 km'],[10,'10 km'],[20,'20 km'],[99,'Todas']].map(function(r){return '<button data-act="raio" data-v="'+r[0]+'" class="'+((S.raio||10)===r[0]?'on':'')+'">'+r[1]+'</button>';}).join('')+'</div>'+
+    '<div class="seg mt">'+[[0,'Todos os mercados'],[1,'★ Só preferidos']].map(function(r){return '<button data-act="soPref" data-v="'+r[0]+'" class="'+((S.soPref?1:0)===r[0]?'on':'')+'">'+r[1]+'</button>';}).join('')+'</div></div>';
   var R=resumoPesquisa(P,its);
   if(!R.tab.length) return h+'<div class="err">Não consegui consultar os sites agora. Tente de novo em alguns minutos.</div>';
-  var top=R.tab[0], base=R.usaComum?'comum':'tot';
-  h+='<div class="card mb"><div class="chead"><h2>Onde comprar</h2><span class="sub">'+its.length+' itens</span></div>'+
-    (R.usaComum?'<p class="sub" style="margin:-6px 0 12px">Comparando os '+R.comum.length+' itens encontrados em todas as lojas, nas quantidades que você costuma levar.</p>':'<p class="sub" style="margin:-6px 0 12px">Poucos itens aparecem em todas as lojas; ordenei pela quantidade de itens encontrados.</p>')+
-    R.tab.map(function(t,i){var L=lojaInfo(t.id),dif=t[base]-top[base];
-      return '<div class="rank '+(i===0?'first':'')+'"><span class="pos">'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(L.nome)+'</b><b>'+$$(t[base])+'</b></div>'+
-        '<div class="sub">'+(t.d!=null?(t.d<1?'<1':Math.round(t.d))+' km · ':'')+t.n+' de '+its.length+' itens'+(R.usaComum&&t.n>R.comum.length?' · todos: '+$$(t.tot):'')+(i>0&&dif>0.005?' · <span style="color:var(--red)">+'+$$(dif)+'</span>':'')+(L.obs?' · '+L.obs:'')+'</div></div></div>';
+  var top=R.tab[0];
+  h+='<div class="card mb"><div class="chead"><h2>Onde comprar</h2><span class="sub">do mais barato</span></div>'+
+    '<p class="sub" style="margin:-6px 0 12px">Total da lista nas quantidades que você costuma levar. Item que a loja não tem entra pelo preço médio das outras.</p>'+
+    R.tab.map(function(t,i){var L=lojaInfo(t.id),dif=t.total-top.total;
+      return '<div class="rank '+(i===0?'first':'')+'"><span class="pos">'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(preferida(L)?'<span style="color:#f0c46a">★</span> ':'')+esc(L.nome)+'</b><b>'+$$(t.total)+'</b></div>'+
+        '<div class="sub">'+(i===0?'<span style="color:var(--lime);font-weight:700">mais barato</span> · ':(dif>0.005?'<span style="color:var(--red)">+'+$$(dif)+'</span> · ':''))+(t.d!=null?(t.d<1?'<1':Math.round(t.d))+' km · ':'')+'achou '+t.n+' de '+its.length+(t.nEst?' ('+t.nEst+' pela média)':'')+(L.obs?' · '+L.obs:'')+'</div></div></div>';
     }).join('')+
     (R.achados>1?'<div class="ok mt">Comprando cada item onde está mais barato: <b>'+$$(R.melhor)+'</b> ('+R.achados+' itens)</div>':'')+'</div>';
   // por produto
@@ -853,11 +858,11 @@ function telaPrecos(){
         var L=lojaInfo(x.t.id);
         if(!x.e) return '<div class="li" style="padding:9px 0"><div class="tx"><div class="t1" style="font-weight:500">'+esc(L.nome)+'</div><div class="t2">não encontrado'+(P.res[x.t.id]&&P.res[x.t.id][it.id]&&P.res[x.t.id][it.id].length?' · <button data-act="cands" data-i="'+esc(it.id)+'" data-l="'+esc(x.t.id)+'" style="color:var(--purple);font-weight:600">ver opções</button>':'')+'</div></div><div class="vv sub">—</div></div>';
         var c=x.e.c, r=refCand(c), v=custo(it,c), barato=vs.length>1&&Math.abs(v-mn)<0.005, caro=vs.length>1&&Math.abs(v-mx)<0.005&&mx-mn>0.005;
-        return '<button class="li" style="padding:9px 0" data-act="cands" data-i="'+esc(it.id)+'" data-l="'+esc(x.t.id)+'"><div class="tx"><div class="t1" style="font-weight:500">'+esc(L.nome)+'</div><div class="t2 wrap">'+esc(c.nome)+(c.disp?'':' · <span style="color:#f0c46a">sem estoque online</span>')+(x.e.manual?' · escolhido por você':'')+'</div></div>'+
+        return '<button class="li" style="padding:9px 0" data-act="cands" data-i="'+esc(it.id)+'" data-l="'+esc(x.t.id)+'"><div class="tx"><div class="t1" style="font-weight:500">'+(preferida(L)?'<span style="color:#f0c46a">★</span> ':'')+esc(L.nome)+'</div><div class="t2 wrap">'+esc(c.nome)+(c.disp?'':' · <span style="color:#f0c46a">sem estoque online</span>')+(x.e.manual?' · escolhido por você':'')+'</div></div>'+
           '<div class="vv"><div class="pr '+(barato?'good':caro?'bad':'')+'">'+$$(c.preco)+(c.un==='kg'?'<span class="un">/kg</span>':'')+'</div>'+(r.base!=='un'&&c.un!=='kg'?'<div class="sub">'+$$(r.v)+uRef(r.base)+'</div>':'')+(c.de?'<div class="sub" style="text-decoration:line-through">'+$$(c.de)+'</div>':'')+'</div></button>';
       }).join('')+'</div>')+'</div>';
   });
-  h+='<p class="sub" style="text-align:center;margin:14px 8px 0">Quando a busca não tem marca, o app pega a opção mais barata que corresponde em cada loja. Toque numa loja para escolher outro produto, ou em “mudar” para incluir a marca.</p><p class="sub" style="text-align:center;margin:8px 8px 0">Preços dos sites dos mercados no momento da pesquisa. Na loja física o preço pode ser diferente. Condor e Carrefour não liberam consulta de preços pelo site.</p>';
+  h+='<p class="sub" style="text-align:center;margin:14px 8px 0">Quando a busca não tem marca, o app pega a opção mais barata que corresponde em cada loja. Toque numa loja para escolher outro produto, ou em “mudar” para incluir a marca.</p><p class="sub" style="text-align:center;margin:8px 8px 0">Preços dos sites dos mercados no momento da pesquisa. Na loja física o preço pode ser diferente. Condor e Carrefour não liberam consulta de preços pelo site, e o Jacomar vende só pelo iFood.</p>';
   return h;
 }
 function verCands(iid,lid){
@@ -935,7 +940,7 @@ var VERSAO=8;
 var NOVIDADES=[
  {e:'⭐',t:'Comparar preços ficou mais fácil',d:'O botão para comparar os preços da sua lista nos mercados agora fica no topo da aba Lista, e também num botão verde fixo enquanto você rola. Depois de importar do Cardápio, o app já oferece a comparação.',ir:{tab:'lista',sel:'#cardPrecos',dica:'Toque em Comparar para ver o preço em cada mercado',precisa:'lista'}},
  {e:'🛒',t:'Lista de compras',d:'Nova aba Lista: adicione itens, veja o mercado mais barato de cada um e sugestões do que você costuma recomprar. Ao ler a nota, o que você comprou é marcado sozinho.',ir:{tab:'lista',sel:'#addLista',dica:'Digite um produto aqui ou toque nas sugestões abaixo'}},
- {e:'🔎',t:'Preços de hoje',d:'Na aba Lista, toque em Comparar preços: o app pesquisa a sua lista nos sites do Muffato, Angeloni e Atacadão perto de você e mostra o total em cada um, para você ir onde economiza mais.',ir:{tab:'lista',sel:'#cardPrecos [data-act=pesquisarPrecos]',dica:'Toque aqui com a lista pronta',precisa:'lista'}},
+ {e:'🔎',t:'Preços de hoje',d:'Na aba Lista, toque em Comparar preços: o app pesquisa a sua lista nos sites do Muffato, Festval, Angeloni e Atacadão perto de você e mostra o total em cada um, para você ir onde economiza mais.',ir:{tab:'lista',sel:'#cardPrecos [data-act=pesquisarPrecos]',dica:'Toque aqui com a lista pronta',precisa:'lista'}},
  {e:'🍽️',t:'Importar do Cardápio da Semana',d:'Traga os ingredientes do cardápio direto para a lista, sem digitar.',ir:{tab:'lista',sel:'[data-act=importarCardapio]',dica:'Toque aqui para trazer os ingredientes'}},
  {e:'🟢',t:'Preços que subiram e baixaram',d:'Na aba Produtos → Repetidos: verde se baixou, vermelho se subiu, sempre comparando o preço do quilo ou do litro.',ir:{tab:'produtos',pview:'repetidos',sel:'[data-act=rep][data-v=todos]',dica:'Toque em Subiram ou Baixaram para filtrar'}},
  {e:'📦',t:'Embalagens diferentes separadas',d:'Arroz de 1 kg e de 5 kg com o mesmo nome na nota não são mais misturados. Abra o produto e informe o peso da embalagem para comparar pelo quilo.',ir:{tab:'produtos',pview:'todos',sel:'#busca',dica:'Abra um produto para informar o peso da embalagem'}},
@@ -1358,12 +1363,13 @@ document.addEventListener('click',function(e){
         S.lista.push({id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),g:x.G?x.G.id:null,nome:x.G?x.G.nome:x.n,feito:false,qtd:x.qtd,orig:'cardapio',alvoQ:al,termo:x.G?undefined:x.n});nAdd++;});
       V.imp=null; save(); V.tab='lista'; render();
       abrir(shead('Itens na lista')+'<div class="ok">'+nAdd+(nAdd===1?' item do cardápio foi adicionado':' itens do cardápio foram adicionados')+' à sua lista.</div>'+
-        '<p class="sub" style="margin:12px 2px">Quer ver agora quanto essa lista custa hoje no Muffato, Angeloni e Atacadão perto de você?</p>'+
+        '<p class="sub" style="margin:12px 2px">Quer ver agora quanto essa lista custa hoje no Muffato, Festval, Angeloni e Atacadão perto de você?</p>'+
         '<div class="stack"><button class="btn pri full" data-act="pesquisarPrecos">'+I.search.replace('<svg','<svg style="width:18px;height:18px"')+' Comparar preços agora</button><button class="btn full" data-act="fechar">Depois</button></div>');
       break;
     case 'novidades': verNovidades(); break;
     case 'mostrarOnde': mostrarOnde(+t.dataset.i); break;
     case 'raio': S.raio=+t.dataset.v; save(); pesquisarPrecos(); break;
+    case 'soPref': S.soPref=!!+t.dataset.v; save(); pesquisarPrecos(); break;
     case 'cands': verCands(t.dataset.i,t.dataset.l); break;
     case 'escolher': if(S.pesquisa){S.pesquisa.escolha[t.dataset.i+'|'+t.dataset.l]=+t.dataset.k;save();} fechar(); render(); break;
     case 'termo':
