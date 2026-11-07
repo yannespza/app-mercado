@@ -148,6 +148,17 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 .spark{width:100%;height:70px;display:block}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + var(--safe-b));background:var(--card2);border:1px solid var(--line2);border-radius:999px;padding:10px 16px;font-size:13.5px;z-index:60;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.pr.good{color:var(--lime)!important;font-weight:700}
+.pr.bad{color:var(--red)!important;font-weight:700}
+.un{font-size:.78em;color:var(--muted);font-weight:500;margin-left:1px}
+.pr.good .un,.pr.bad .un{color:inherit;opacity:.75}
+.li.rep{padding-left:12px;position:relative}
+.li.rep::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--line2)}
+.li.rep.good::before{background:var(--lime)}
+.li.rep.bad::before{background:var(--red)}
+.li.rep .vv{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.filt{border-color:var(--line)}
+.filt.on{border-color:var(--purple);box-shadow:0 0 0 1px var(--purple) inset}
 .mt{margin-top:12px}.mb{margin-bottom:12px}
 .hide{display:none!important}
 @media (min-width:720px){
@@ -232,6 +243,46 @@ function bonito(s){
 function nomeProduto(s){return String(s||'').toLowerCase().replace(/(^|[\s.])\S/g,function(c){return c.toUpperCase();});}
 function iniciais(s){var w=bonito(s).split(' ').filter(Boolean);return ((w[0]||'?')[0]+((w[1]||'')[0]||'')).toUpperCase();}
 
+/* ---------- preço de referência: por kg, por litro ou por unidade ----------
+   Produtos pesados (KG) já vêm com o preço do quilo na nota.
+   Pacotes com peso/volume no nome (ex.: "CAFE 500G", "LEITE 12X1L") são convertidos para o preço do kg/litro.
+   Itens pesados na balança que a nota lança como "1 UN" sem o peso ficam fora da comparação. */
+function tamanho(nome){
+  var s=String(nome||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+  var fat={KG:1,KGS:1,G:0.001,GR:0.001,GRS:0.001,GRAMAS:0.001,ML:0.001,L:1,LT:1,LTS:1,LITRO:1,LITROS:1};
+  var m=/(?:(\d+)\s*X\s*)?(\d+(?:[.,]\d+)?)\s*(KGS?|GRAMAS|GRS?|G|ML|LITROS?|LTS?|L)(?![A-Z])/.exec(s);
+  if(!m) return null;
+  var q=(m[1]?+m[1]:1)*parseFloat(m[2].replace(',','.'))*fat[m[3]];
+  return q>0?{q:q,base:/^(ML|L|LT|LTS|LITRO|LITROS)$/.test(m[3])?'L':'kg'}:null;
+}
+function precoRef(it){
+  var un=String(it.un||'').toUpperCase().replace(/[^A-Z]/g,''), p=it.vUnit, q=+it.qtd;
+  if(!(p>0)) return {v:null,base:'un'};
+  if(/^(KG|KGS|KILO|QUILO|KILOGRAMA)$/.test(un)) return {v:p,base:'kg'};
+  if(/^(G|GR|GRS|GRAMA)$/.test(un)) return {v:p*1000,base:'kg'};
+  if(/^(L|LT|LTS|LITRO)$/.test(un)) return {v:p,base:'L'};
+  if(un==='ML') return {v:p*1000,base:'L'};
+  if(q>0&&Math.abs(q-Math.round(q))>0.0005) return {v:p,base:'kg'}; // vendido a granel, lançado como UN com quantidade quebrada
+  var t=tamanho(it.nome); if(t) return {v:p/t.q,base:t.base};
+  if(/(^| )(KG|KILO|GRANEL)( |$)/.test(norm(it.nome))) return {v:null,base:'kg'}; // pesado na balança sem o peso na nota
+  return {v:p,base:'un'};
+}
+function uRef(base,un){return base==='kg'?'/kg':base==='L'?'/L':'/'+String(un||'un').toLowerCase();}
+function $$ref(c){return c&&c.ref!=null?$$(c.ref)+'<span class="un">'+uRef(c.base,c.un)+'</span>':$$(c?c.vUnit:0);}
+/* Compara uma compra com a compra anterior do mesmo produto em um mês anterior.
+   Prefere o mesmo mercado; se não houver, usa a mais recente de outro mercado. */
+function anterior(G,i){
+  var c=G.compras[i]; if(!c||c.ref==null) return null;
+  var outro=null;
+  for(var j=i-1;j>=0;j--){
+    var p=G.compras[j]; if(p.mes>=c.mes||p.ref==null||p.base!==c.base) continue;
+    if(p.mid===c.mid) return {prev:p,v:c.ref/p.ref-1,mesmo:true};
+    if(!outro) outro=p;
+  }
+  return outro?{prev:outro,v:c.ref/outro.ref-1,mesmo:false}:null;
+}
+function tom(v){return v==null?'':Math.abs(v)<0.005?'neu':v>0?'bad':'good';}
+
 /* ---------- análise (com cache) ---------- */
 var C=null;
 function invalidate(){C=null;}
@@ -243,7 +294,7 @@ function grupoDe(mid,it){
 }
 function calc(){
   if(C) return C;
-  var meses={}, mercados={}, grupos={};
+  var meses={}, mercados={}, grupos={}, idx={};
   var notas=S.notas.slice().sort(function(a,b){return (a.data||'').localeCompare(b.data||'');});
   notas.forEach(function(n){
     var mk=(n.data||'').slice(0,7)||hojeMes(); var mid=mercadoId(n);
@@ -252,12 +303,13 @@ function calc(){
     meses[mk].porMercado[mid]=(meses[mk].porMercado[mid]||0)+n.total;
     var m=(mercados[mid]=mercados[mid]||{id:mid,nome:'',total:0,compras:0,ultima:''});
     m.nome=nomeMercado(mid,n.mercado); m.total+=n.total; m.compras++; m.ultima=n.data;
-    n.itens.forEach(function(it){
+    n.itens.forEach(function(it,ii){
       if(!(it.vUnit>0)) return;
-      var g=grupoDe(mid,it);
+      var g=grupoDe(mid,it), r=precoRef(it);
       var G=(grupos[g]=grupos[g]||{id:g,nome:it.nome,compras:[],keys:{}});
       G.keys[itemKey(mid,it)]=it.nome;
-      G.compras.push({mid:mid,data:n.data,mes:mk,vUnit:it.vUnit,un:it.un,qtd:it.qtd,vTotal:it.vTotal,nome:it.nome,nota:n.id});
+      G.compras.push({mid:mid,data:n.data,mes:mk,vUnit:it.vUnit,un:it.un,qtd:it.qtd,vTotal:it.vTotal,nome:it.nome,nota:n.id,ref:r.v,base:r.base});
+      idx[n.id+'|'+ii]={g:g,i:G.compras.length-1};
     });
   });
   Object.keys(grupos).forEach(function(g){
@@ -266,9 +318,13 @@ function calc(){
     G.nome=G.compras[G.compras.length-1].nome;
     G.mercados=Object.keys(G.porMercado);
     G.ultimo={}; G.mercados.forEach(function(m){var a=G.porMercado[m];G.ultimo[m]=a[a.length-1];});
-    var best=null; G.mercados.forEach(function(m){if(!best||G.ultimo[m].vUnit<G.ultimo[best].vUnit)best=m;}); G.maisBarato=best;
+    // base mais comum (kg, L ou un) e último preço comparável em cada mercado
+    var cnt={}; G.compras.forEach(function(c){if(c.ref!=null)cnt[c.base]=(cnt[c.base]||0)+1;});
+    G.base=Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];})[0]||null;
+    G.ultRef={}; G.mercados.forEach(function(m){var a=G.porMercado[m];for(var i=a.length-1;i>=0;i--){if(a[i].ref!=null&&a[i].base===G.base){G.ultRef[m]=a[i];break;}}});
+    var best=null; Object.keys(G.ultRef).forEach(function(m){if(!best||G.ultRef[m].ref<G.ultRef[best].ref)best=m;}); G.maisBarato=best;
   });
-  C={meses:meses,mercados:mercados,grupos:grupos,ranking:ranking(grupos,mercados)};
+  C={meses:meses,mercados:mercados,grupos:grupos,idx:idx,ranking:ranking(grupos,mercados)};
   return C;
 }
 /* Índice de cesta: para cada produto vendido em 2+ mercados, compara o preço mais recente
@@ -276,17 +332,17 @@ function calc(){
 function ranking(grupos,mercados){
   var acc={};
   Object.keys(grupos).forEach(function(g){
-    var G=grupos[g]; if(G.mercados.length<2) return;
-    var ps=G.mercados.map(function(m){return G.ultimo[m].vUnit;});
+    var G=grupos[g], ms=Object.keys(G.ultRef); if(ms.length<2) return;
+    var ps=ms.map(function(m){return G.ultRef[m].ref;});
     var media=ps.reduce(function(a,b){return a+b;},0)/ps.length; if(!(media>0)) return;
-    G.mercados.forEach(function(m){var a=(acc[m]=acc[m]||{log:0,n:0,mais:0,menos:0});var r=G.ultimo[m].vUnit/media;a.log+=Math.log(r);a.n++;if(r<0.995)a.menos++;else if(r>1.005)a.mais++;});
+    ms.forEach(function(m){var a=(acc[m]=acc[m]||{log:0,n:0,mais:0,menos:0});var r=G.ultRef[m].ref/media;a.log+=Math.log(r);a.n++;if(r<0.995)a.menos++;else if(r>1.005)a.mais++;});
   });
   return Object.keys(acc).map(function(m){var a=acc[m];return {id:m,nome:mercados[m]?mercados[m].nome:nomeMercado(m),indice:Math.exp(a.log/a.n)-1,n:a.n,maisBarato:a.menos,maisCaro:a.mais};})
     .sort(function(a,b){return a.indice-b.indice;});
 }
 function comparaPar(a,b){
   var c=calc(), itens=[], log=0;
-  Object.keys(c.grupos).forEach(function(g){var G=c.grupos[g];if(G.ultimo[a]&&G.ultimo[b]){var pa=G.ultimo[a].vUnit,pb=G.ultimo[b].vUnit;itens.push({g:G,pa:pa,pb:pb});log+=Math.log(pa/pb);}});
+  Object.keys(c.grupos).forEach(function(g){var G=c.grupos[g];if(G.ultRef[a]&&G.ultRef[b]){var pa=G.ultRef[a].ref,pb=G.ultRef[b].ref;itens.push({g:G,pa:pa,pb:pb,u:uRef(G.base,G.ultRef[a].un)});log+=Math.log(pa/pb);}});
   itens.sort(function(x,y){return Math.abs(y.pa-y.pb)-Math.abs(x.pa-x.pb);});
   return {itens:itens,dif:itens.length?Math.exp(log/itens.length)-1:0};
 }
@@ -294,16 +350,21 @@ function comparaPar(a,b){
 function variacoesDoMes(mk){
   var c=calc(), out=[];
   Object.keys(c.grupos).forEach(function(g){
+    var G=c.grupos[g], visto={};
+    for(var i=G.compras.length-1;i>=0;i--){
+      var x=G.compras[i]; if(x.mes!==mk||visto[x.mid]||x.ref==null) continue; visto[x.mid]=1;
+      var a=anterior(G,i); if(!a||!a.mesmo) continue;
+      out.push({g:G,m:x.mid,de:a.prev,para:x,v:Math.abs(a.v)<0.001?0:a.v,mesAnt:a.prev.mes});
+    }
+  });
+  return out;
+}
+/* Produtos comprados em meses diferentes: última compra vs compra de um mês anterior */
+function repetidos(){
+  var c=calc(), out=[];
+  Object.keys(c.grupos).forEach(function(g){
     var G=c.grupos[g];
-    G.mercados.forEach(function(m){
-      var arr=G.porMercado[m]; var idx=-1;
-      for(var i=arr.length-1;i>=0;i--){if(arr[i].mes===mk){idx=i;break;}}
-      if(idx<=0) return;
-      var prev=null; for(var j=idx-1;j>=0;j--){if(arr[j].mes!==mk){prev=arr[j];break;}}
-      if(!prev) return;
-      var v=arr[idx].vUnit/prev.vUnit-1; if(Math.abs(v)<0.001) {out.push({g:G,m:m,de:prev.vUnit,para:arr[idx].vUnit,v:0,mesAnt:prev.mes});return;}
-      out.push({g:G,m:m,de:prev.vUnit,para:arr[idx].vUnit,v:v,mesAnt:prev.mes});
-    });
+    for(var i=G.compras.length-1;i>=0;i--){if(G.compras[i].ref==null) continue; var a=anterior(G,i); if(a) out.push({G:G,c:G.compras[i],a:a}); break;}
   });
   return out;
 }
@@ -331,7 +392,7 @@ function juntar(A,B){
 function separar(G){Object.keys(G.keys).forEach(function(k){delete S.links[k];});save();}
 
 /* ---------- estado de tela ---------- */
-var V={tab:'inicio',mes:null,busca:'',parA:null,parB:null};
+var V={tab:'inicio',mes:null,busca:'',parA:null,parB:null,pview:'repetidos',rep:'todos'};
 function mesesComDados(){return Object.keys(calc().meses).sort();}
 function mesAtual(){if(V.mes)return V.mes;var ks=mesesComDados();var h=hojeMes();return ks.indexOf(h)>=0||!ks.length?h:ks[ks.length-1];}
 
@@ -400,7 +461,7 @@ function telaInicio(){
   var mud=vars.filter(function(v){return v.v!==0;}).sort(function(a,b){return Math.abs(b.v)-Math.abs(a.v);}).slice(0,6);
   if(mud.length){
     h+='<div class="card mb"><div class="chead"><h2>Preços que mudaram</h2><span class="sub">vs sua compra anterior</span></div><div class="list">'+
-      mud.map(function(v){return '<button class="li" data-act="produto" data-g="'+esc(v.g.id)+'"><div class="tx"><div class="t1">'+esc(nomeProduto(v.g.nome))+'</div><div class="t2 wrap">'+esc(nomeMercado(v.m))+' · '+$$(v.de)+' → '+$$(v.para)+'</div></div><span class="badge '+(v.v>0?'b-bad':'b-good')+'">'+pct(v.v)+'</span></button>';}).join('')+'</div></div>';
+      mud.map(function(v){return '<button class="li" data-act="produto" data-g="'+esc(v.g.id)+'"><div class="tx"><div class="t1">'+esc(nomeProduto(v.g.nome))+'</div><div class="t2 wrap">'+esc(nomeMercado(v.m))+' · '+$$ref(v.de)+' → '+$$ref(v.para)+'</div></div><span class="badge '+(v.v>0?'b-bad':'b-good')+'">'+pct(v.v)+'</span></button>';}).join('')+'</div></div>';
   }
   // compras do mês
   h+='<div class="card"><div class="chead"><h2>Compras do mês</h2><span class="sub">'+$$(M.total)+'</span></div>'+listaNotas(M.notas.slice().reverse(),'Nenhuma nota neste mês. Toque no botão verde para ler uma.')+'</div>';
@@ -428,16 +489,43 @@ function telaNotas(){
 
 /* ---------- Produtos ---------- */
 function telaProdutos(){
-  var c=calc(), h=topo('Produtos')+bannerExemplo();
+  var c=calc(), seg='<div class="seg" style="min-width:230px"><button data-act="pview" data-v="repetidos" class="'+(V.pview==='repetidos'?'on':'')+'">Repetidos</button><button data-act="pview" data-v="todos" class="'+(V.pview==='todos'?'on':'')+'">Todos</button></div>';
+  var h=topo('Produtos',seg)+bannerExemplo();
   if(!S.notas.length) return h+vazioGeral();
-  var sug=sugestoes();
+  var sug=sugestoes(), sugH='';
   if(sug.length){
-    h+='<div class="suggest"><b>Parecem o mesmo produto?</b><div class="sub">Cada mercado escreve o nome de um jeito. Juntando, o app compara o preço entre eles.</div>'+
+    sugH='<div class="suggest'+(V.pview==='repetidos'?' mt':'')+'"><b>Parecem o mesmo produto?</b><div class="sub">Cada mercado escreve o nome de um jeito. Juntando, o app compara o preço entre eles.</div>'+
       sug.map(function(s){return '<div class="pair">'+esc(nomeProduto(s.A.nome))+' <span class="sub">('+esc(nomeMercado(s.A.mercados[0]))+')</span><br>'+esc(nomeProduto(s.B.nome))+' <span class="sub">('+esc(nomeMercado(s.B.mercados[0]))+')</span>'+
        '<div class="acts"><button class="btn pur" data-act="juntar" data-a="'+esc(s.A.id)+'" data-b="'+esc(s.B.id)+'">São o mesmo</button><button class="btn" data-act="ignorar" data-k="'+esc(s.key)+'">Não são</button></div></div>';}).join('')+'</div>';
   }
-  h+='<div class="search">'+I.search+'<input id="busca" placeholder="Buscar produto" value="'+esc(V.busca)+'" autocomplete="off"></div><div id="plist">'+listaProdutos()+'</div>';
-  return h;
+  if(V.pview!=='repetidos') h+=sugH;
+  if(V.pview==='repetidos'){
+    var rs=repetidos(), n={todos:rs.length,subiu:0,baixou:0,igual:0};
+    rs.forEach(function(r){var t=tom(r.a.v);n[t==='bad'?'subiu':t==='good'?'baixou':'igual']++;});
+    h+='<div class="grid4" style="grid-template-columns:repeat(3,1fr)">'+
+      [['todos','Repetidos','b-pur'],['subiu','Subiram','b-bad'],['baixou','Baixaram','b-good']].map(function(f){
+        return '<button class="card kpi filt'+(V.rep===f[0]?' on':'')+'" data-act="rep" data-v="'+f[0]+'" style="text-align:left"><div class="lb">'+f[1]+'</div><div class="v"><span class="badge '+f[2]+'" style="font-size:16px;padding:3px 11px">'+n[f[0]]+'</span></div></button>';
+      }).join('')+'</div>'+
+      '<p class="sub" style="margin:-2px 2px 12px">Compara a última compra de cada produto com a de um mês anterior, pelo preço do <b>quilo</b> ou do <b>litro</b> quando dá para calcular. <span style="color:var(--lime)">Verde</span> = baixou, <span style="color:var(--red)">vermelho</span> = subiu.</p>';
+  }
+  h+='<div class="search">'+I.search+'<input id="busca" placeholder="Buscar produto" value="'+esc(V.busca)+'" autocomplete="off"></div><div id="plist">'+(V.pview==='repetidos'?listaRepetidos():listaProdutos())+'</div>';
+  return h+(V.pview==='repetidos'?sugH:'');
+}
+function listaRepetidos(){
+  var q=norm(V.busca), rs=repetidos().filter(function(r){
+    var t=tom(r.a.v);
+    if(V.rep==='subiu'&&t!=='bad') return false;
+    if(V.rep==='baixou'&&t!=='good') return false;
+    return !q||norm(r.G.nome).indexOf(q)>=0||Object.keys(r.G.keys).some(function(k){return norm(r.G.keys[k]).indexOf(q)>=0;});
+  });
+  if(!rs.length) return '<div class="card"><div class="empty"><b>'+(q||V.rep!=='todos'?'Nada por aqui':'Nenhum produto repetido ainda')+'</b>'+(q||V.rep!=='todos'?'Tente outro filtro ou busca.':'Quando você comprar o mesmo produto em meses diferentes, ele aparece aqui com o preço subindo ou baixando.')+'</div></div>';
+  rs.sort(function(a,b){return Math.abs(b.a.v)-Math.abs(a.a.v);});
+  return '<div class="card"><div class="list">'+rs.map(function(r){
+    var t=tom(r.a.v), p=r.a.prev, x=r.c, pacote=x.base!=='un'&&Math.abs(x.ref-x.vUnit)>0.005;
+    return '<button class="li rep '+t+'" data-act="produto" data-g="'+esc(r.G.id)+'"><div class="tx"><div class="t1">'+esc(nomeProduto(r.G.nome))+'</div>'+
+      '<div class="t2 wrap">'+mesCurto(p.mes)+': '+$$ref(p)+(r.a.mesmo?'':' em '+esc(nomeMercado(p.mid)))+' → '+mesCurto(x.mes)+' · '+esc(nomeMercado(x.mid))+(pacote?' · pacote '+$$(x.vUnit):'')+'</div></div>'+
+      '<div class="vv"><div class="pr '+t+'">'+$$ref(x)+'</div><span class="badge '+(t==='bad'?'b-bad':t==='good'?'b-good':'b-neu')+'">'+(t==='neu'?'igual':pct(r.a.v))+'</span></div></button>';
+  }).join('')+'</div></div>';
 }
 function listaProdutos(){
   var c=calc(), q=norm(V.busca);
@@ -445,9 +533,9 @@ function listaProdutos(){
   gs.sort(function(a,b){return (b.mercados.length-a.mercados.length)||(b.compras.length-a.compras.length)||a.nome.localeCompare(b.nome);});
   if(!gs.length) return '<div class="empty">Nenhum produto encontrado.</div>';
   return '<div class="card"><div class="list">'+gs.slice(0,250).map(function(G){
-    var u=G.ultimo[G.maisBarato]; var multi=G.mercados.length>1;
-    return '<button class="li" data-act="produto" data-g="'+esc(G.id)+'"><div class="tx"><div class="t1">'+esc(nomeProduto(G.nome))+'</div><div class="t2">'+(multi?'Mais barato: '+esc(nomeMercado(G.maisBarato)):esc(nomeMercado(G.mercados[0])))+' · '+G.compras.length+'x comprado</div></div>'+
-      '<div class="vv">'+$$(u.vUnit)+'<div class="sub">/'+esc((u.un||'un').toLowerCase())+'</div></div></button>';
+    var u=G.maisBarato?G.ultRef[G.maisBarato]:G.ultimo[G.mercados[0]]; var multi=Object.keys(G.ultRef).length>1;
+    return '<button class="li" data-act="produto" data-g="'+esc(G.id)+'"><div class="tx"><div class="t1">'+esc(nomeProduto(G.nome))+'</div><div class="t2">'+(multi?'Mais barato: '+esc(nomeMercado(G.maisBarato)):esc(nomeMercado(u.mid)))+' · '+G.compras.length+'x comprado</div></div>'+
+      '<div class="vv">'+(u.ref!=null?$$(u.ref)+'<div class="sub">'+uRef(u.base,u.un)+'</div>':$$(u.vUnit)+'<div class="sub">/'+esc((u.un||'un').toLowerCase())+'</div>')+'</div></button>';
   }).join('')+'</div></div>';
 }
 
@@ -481,7 +569,7 @@ function telaMercados(){
       h+='<div class="ok mt" style="'+(p.dif>0?'background:var(--redBg);color:#ffc2c8;border-color:rgba(255,107,122,.3)':'')+'">'+
         (Math.abs(p.dif)<0.005?'Os dois empatam nos '+p.itens.length+' produtos em comum.':'<b>'+esc(nA)+'</b> sai <b>'+pct(Math.abs(p.dif)).replace('+','')+(p.dif>0?' mais caro':' mais barato')+'</b> que '+esc(nB)+' nos '+p.itens.length+' produtos em comum.')+'</div>'+
         '<table class="ptable mt"><tr><th>Produto</th><th class="r">'+esc(nA.split(' ')[0])+'</th><th class="r">'+esc(nB.split(' ')[0])+'</th></tr>'+
-        p.itens.slice(0,40).map(function(x){var aw=x.pa<x.pb,bw=x.pb<x.pa;return '<tr><td>'+esc(nomeProduto(x.g.nome))+'</td><td class="r" style="'+(aw?'color:var(--lime);font-weight:700':'')+'">'+$$(x.pa)+'</td><td class="r" style="'+(bw?'color:var(--lime);font-weight:700':'')+'">'+$$(x.pb)+'</td></tr>';}).join('')+'</table>';
+        p.itens.slice(0,40).map(function(x){var aw=x.pa<x.pb,bw=x.pb<x.pa,u=x.u!=='/un'?'<span class="un">'+x.u+'</span>':'';return '<tr><td>'+esc(nomeProduto(x.g.nome))+'</td><td class="r" style="'+(aw?'color:var(--lime);font-weight:700':'')+'">'+$$(x.pa)+u+'</td><td class="r" style="'+(bw?'color:var(--lime);font-weight:700':'')+'">'+$$(x.pb)+u+'</td></tr>';}).join('')+'</table>';
     }
     h+='</div>';
   }
@@ -500,30 +588,44 @@ function verNota(id){
   abrir(shead(esc(nomeMercado(mid,n.mercado)))+
    '<div class="grid4" style="grid-template-columns:1fr 1fr"><div class="card kpi"><div class="lb">Total pago</div><div class="v">'+$$(n.total)+'</div>'+(n.desconto?'<div class="sub">desconto de '+$$(n.desconto)+'</div>':'')+'</div><div class="card kpi"><div class="lb">Data</div><div class="v">'+dataBR(n.data)+'</div><div class="sub">'+(n.data?n.data.slice(11,16):'')+' · '+n.itens.length+' itens</div></div></div>'+
    (n.endereco?'<p class="sub" style="margin:0 0 10px">'+esc(n.endereco)+'</p>':'')+
+   '<p class="sub" style="margin:0 0 6px">Preço unitário <span style="color:var(--lime)">verde</span> = mais barato que no mês anterior, <span style="color:var(--red)">vermelho</span> = mais caro (pelo preço do kg/litro).</p>'+
    '<table class="ptable"><tr><th>Produto</th><th class="r">Qtd</th><th class="r">Unit.</th><th class="r">Total</th></tr>'+
-   n.itens.map(function(it){return '<tr data-act="produto" data-g="'+esc(grupoDe(mid,it))+'" style="cursor:pointer"><td>'+esc(nomeProduto(it.nome))+'</td><td class="r">'+String(it.qtd).replace('.',',')+' '+esc((it.un||'').toLowerCase())+'</td><td class="r">'+$$(it.vUnit)+'</td><td class="r">'+$$(it.vTotal)+'</td></tr>';}).join('')+
+   n.itens.map(function(it,ii){
+     var ix=calc().idx[n.id+'|'+ii], a=ix?anterior(calc().grupos[ix.g],ix.i):null, t=a?tom(a.v):'';
+     var tip=a?' title="'+mesCurto(a.prev.mes)+': '+$$(a.prev.ref)+uRef(a.prev.base,a.prev.un)+' ('+pct(a.v)+')"':'';
+     return '<tr data-act="produto" data-g="'+esc(ix?ix.g:grupoDe(mid,it))+'" style="cursor:pointer"><td>'+esc(nomeProduto(it.nome))+(a&&t!=='neu'?'<div class="sub pr '+t+'" style="font-size:11.5px">'+(t==='bad'?'▲ ':'▼ ')+pct(a.v)+' vs '+mesCurto(a.prev.mes)+'</div>':'')+'</td><td class="r">'+String(it.qtd).replace('.',',')+' '+esc((it.un||'').toLowerCase())+'</td><td class="r pr '+t+'"'+tip+'>'+$$(it.vUnit)+'</td><td class="r">'+$$(it.vTotal)+'</td></tr>';
+   }).join('')+
    '</table><div class="stack mt"><button class="btn dan full" data-act="apagarNota" data-id="'+esc(n.id)+'">Apagar esta nota</button></div>');
 }
 function verProduto(gid){
   var G=calc().grupos[gid]; if(!G) return;
-  var ms=G.mercados.slice().sort(function(a,b){return G.ultimo[a].vUnit-G.ultimo[b].vUnit;});
+  var val=function(c){return c.ref!=null&&c.base===G.base;};
+  var ms=G.mercados.slice().sort(function(a,b){return (G.ultRef[a]?G.ultRef[a].ref:1e12)-(G.ultRef[b]?G.ultRef[b].ref:1e12);});
   var nomes={};Object.keys(G.keys).forEach(function(k){nomes[G.keys[k]]=1;});
   var h=shead(esc(nomeProduto(G.nome)));
+  if(G.base&&G.base!=='un') h+='<p class="sub" style="margin:-6px 0 10px">Preços comparados por <b>'+(G.base==='kg'?'quilo':'litro')+'</b>.</p>';
+  else if(!G.base) h+='<p class="sub" style="margin:-6px 0 10px">Pesado na balança sem o peso na nota: não dá para comparar o preço do quilo.</p>';
   h+=spark(G);
   h+='<table class="ptable mt"><tr><th>Mercado</th><th class="r">Último</th><th class="r">Menor</th><th class="r">Maior</th></tr>'+ms.map(function(m,i){
-    var a=G.porMercado[m].map(function(c){return c.vUnit;});
-    return '<tr><td>'+(ms.length>1&&i===0?'<span class="badge b-good" style="margin-right:6px">melhor</span>':'')+esc(nomeMercado(m))+'<div class="sub">'+dataBR(G.ultimo[m].data)+'</div></td><td class="r"><b>'+$$(G.ultimo[m].vUnit)+'</b></td><td class="r">'+$$(Math.min.apply(null,a))+'</td><td class="r">'+$$(Math.max.apply(null,a))+'</td></tr>';
+    var u=G.ultRef[m], a=G.porMercado[m].filter(val).map(function(c){return c.ref;}), suf=G.base&&G.base!=='un'?'<span class="un">'+uRef(G.base)+'</span>':'';
+    return '<tr><td>'+(Object.keys(G.ultRef).length>1&&m===G.maisBarato?'<span class="badge b-good" style="margin-right:6px">melhor</span>':'')+esc(nomeMercado(m))+'<div class="sub">'+dataBR((u||G.ultimo[m]).data)+'</div></td><td class="r"><b>'+(u?$$(u.ref)+suf:$$(G.ultimo[m].vUnit))+'</b></td><td class="r">'+(a.length?$$(Math.min.apply(null,a)):'—')+'</td><td class="r">'+(a.length?$$(Math.max.apply(null,a)):'—')+'</td></tr>';
   }).join('')+'</table>';
-  h+='<h2 class="mt" style="font-size:16px;margin-top:20px">Histórico</h2><div class="list">'+G.compras.slice().reverse().slice(0,30).map(function(c){return '<div class="li"><div class="tx"><div class="t1" style="font-weight:500">'+esc(nomeMercado(c.mid))+'</div><div class="t2">'+dataBR(c.data)+'/'+(c.data||'').slice(2,4)+' · '+String(c.qtd).replace('.',',')+' '+esc((c.un||'').toLowerCase())+'</div></div><div class="vv">'+$$(c.vUnit)+'</div></div>';}).join('')+'</div>';
+  var hist=[];for(var i=G.compras.length-1;i>=0&&hist.length<30;i--)hist.push(i);
+  h+='<h2 class="mt" style="font-size:16px;margin-top:20px">Histórico</h2><div class="list">'+hist.map(function(i){
+    var c=G.compras[i], a=anterior(G,i), t=a?tom(a.v):'', pac=c.ref!=null&&c.base!=='un'&&Math.abs(c.ref-c.vUnit)>0.005;
+    return '<div class="li"><div class="tx"><div class="t1" style="font-weight:500">'+esc(nomeMercado(c.mid))+'</div><div class="t2">'+dataBR(c.data)+'/'+(c.data||'').slice(2,4)+' · '+String(c.qtd).replace('.',',')+' '+esc((c.un||'').toLowerCase())+(pac?' · pacote '+$$(c.vUnit):'')+'</div></div>'+
+      '<div class="vv"><div class="pr '+t+'">'+$$ref(c)+'</div>'+(a&&t!=='neu'?'<span class="badge '+(t==='bad'?'b-bad':'b-good')+'">'+pct(a.v)+'</span>':'')+'</div></div>';
+  }).join('')+'</div>';
   if(Object.keys(nomes).length>1) h+='<p class="sub mt">Nomes juntados: '+Object.keys(nomes).map(esc).join(' · ')+'</p><button class="btn full mt" data-act="separar" data-g="'+esc(G.id)+'">Separar estes nomes</button>';
   abrir(h);
 }
 function spark(G){
-  var pts=G.compras; if(pts.length<2) return '';
-  var W=600,H=70,ys=pts.map(function(p){return p.vUnit;}),mn=Math.min.apply(null,ys),mx=Math.max.apply(null,ys);if(mx===mn){mx+=1;mn-=1;}
+  var ok=function(p){return p.ref!=null&&p.base===G.base;};
+  var pts=G.compras.filter(ok); if(pts.length<2) return '';
+  var W=600,H=70,ys=pts.map(function(p){return p.ref;}),mn=Math.min.apply(null,ys),mx=Math.max.apply(null,ys);if(mx===mn){mx+=1;mn-=1;}
   var t0=new Date(pts[0].data).getTime(),t1=new Date(pts[pts.length-1].data).getTime()||t0+1;if(t1===t0)t1=t0+1;
-  var lines=G.mercados.map(function(m,i){var a=G.porMercado[m];var d=a.map(function(p,j){var x=(new Date(p.data).getTime()-t0)/(t1-t0)*(W-12)+6,y=H-6-(p.vUnit-mn)/(mx-mn)*(H-12);return (j?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');
-    var cor=CORES[i%CORES.length];return '<path d="'+d+'" fill="none" stroke="'+cor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+a.map(function(p){var x=(new Date(p.data).getTime()-t0)/(t1-t0)*(W-12)+6,y=H-6-(p.vUnit-mn)/(mx-mn)*(H-12);return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.5" fill="'+cor+'"/>';}).join('');}).join('');
+  var lines=G.mercados.map(function(m,i){var a=G.porMercado[m].filter(ok);if(!a.length)return '';var d=a.map(function(p,j){var x=(new Date(p.data).getTime()-t0)/(t1-t0)*(W-12)+6,y=H-6-(p.ref-mn)/(mx-mn)*(H-12);return (j?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');
+    var cor=CORES[i%CORES.length];return '<path d="'+d+'" fill="none" stroke="'+cor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+a.map(function(p){var x=(new Date(p.data).getTime()-t0)/(t1-t0)*(W-12)+6,y=H-6-(p.ref-mn)/(mx-mn)*(H-12);return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.5" fill="'+cor+'"/>';}).join('');}).join('');
   var leg=G.mercados.length>1?'<div class="chips mt">'+G.mercados.map(function(m,i){return '<span class="sub" style="display:flex;align-items:center;gap:6px"><span class="dot" style="background:'+CORES[i%CORES.length]+'"></span>'+esc(nomeMercado(m))+'</span>';}).join('')+'</div>':'';
   return '<div class="card" style="padding:12px 12px 10px"><svg class="spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+lines+'</svg>'+leg+'</div>';
 }
@@ -701,6 +803,8 @@ document.addEventListener('click',function(e){
       if(!n.chave&&t.dataset.url) n.chave=NotaParser.chaveFromUrl(t.dataset.url)||'';
       n.origem='texto'; previa(n,t.dataset.url); break;
     case 'salvarNota': salvarPendente(); break;
+    case 'pview': V.pview=t.dataset.v; render(); break;
+    case 'rep': V.rep=t.dataset.v; render(); break;
     case 'juntar': var c=calc(); juntar(c.grupos[t.dataset.a],c.grupos[t.dataset.b]); render(); toast('Produtos juntados'); break;
     case 'ignorar': S.ignorados[t.dataset.k]=1; save(); render(); break;
     case 'separar': separar(calc().grupos[t.dataset.g]); fechar(); render(); toast('Nomes separados'); break;
@@ -708,7 +812,7 @@ document.addEventListener('click',function(e){
   }
 });
 document.addEventListener('input',function(e){
-  if(e.target.id==='busca'){V.busca=e.target.value;document.getElementById('plist').innerHTML=listaProdutos();}
+  if(e.target.id==='busca'){V.busca=e.target.value;document.getElementById('plist').innerHTML=V.pview==='repetidos'?listaRepetidos():listaProdutos();}
 });
 document.addEventListener('change',function(e){
   if(e.target.id==='parA'){V.parA=e.target.value;render();}
