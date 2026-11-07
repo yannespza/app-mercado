@@ -165,6 +165,13 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 .litem.feito .chk{background:var(--lime);border-color:var(--lime)}
 .litem.feito .t1{text-decoration:line-through;color:var(--faint)}
 .litem.feito .t2{opacity:.5}
+.litem.off .t1{color:var(--muted)}
+.dica-on{position:relative;z-index:31;box-shadow:0 0 0 3px var(--lime),0 0 0 9px rgba(200,244,58,.25)!important;border-radius:14px;animation:pulsa 1.2s ease-in-out infinite}
+@keyframes pulsa{50%{box-shadow:0 0 0 3px var(--lime),0 0 0 15px rgba(200,244,58,.08)!important}}
+.dica-balao{position:fixed;z-index:70;max-width:280px;background:var(--lime);color:#15200a;font-weight:700;font-size:14px;padding:11px 14px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.dica-balao::after{content:"";position:absolute;left:calc(var(--seta) - 8px);border:8px solid transparent}
+.dica-balao.baixo::after{top:-16px;border-bottom-color:var(--lime)}
+.dica-balao.cima::after{bottom:-16px;border-top-color:var(--lime)}
 .mt{margin-top:12px}.mb{margin-bottom:12px}
 .hide{display:none!important}
 @media (min-width:720px){
@@ -612,6 +619,7 @@ function ondeComprar(itens){
 function telaLista(){
   var c=calc(), h=topo('Lista de compras')+bannerExemplo();
   var abertos=S.lista.filter(function(l){return !l.feito;}), feitos=S.lista.filter(function(l){return l.feito;});
+  h+='<button class="btn full mb" data-act="importarCardapio" style="justify-content:flex-start;gap:12px;text-align:left"><span style="font-size:20px">🍽️</span><span style="flex:1"><b>Importar do Cardápio da Semana</b><div class="sub" style="font-weight:500">Traz os ingredientes da semana para esta lista</div></span></button>';
   h+='<div class="card mb"><div style="display:flex;gap:8px"><input id="addLista" placeholder="Adicionar item (ex.: café)" autocomplete="off"><button class="btn pri" data-act="addLivre" style="padding:0 16px;flex:none" aria-label="Adicionar">'+I.plus.replace('<svg','<svg style="width:20px;height:20px"')+'</button></div><div id="addSug"></div></div>';
   if(!S.lista.length){
     h+='<div class="card mb"><div class="empty"><b>Sua lista está vazia</b>Adicione itens acima ou toque nas sugestões abaixo. Ao ler a nota, os itens comprados são marcados sozinhos.</div></div>';
@@ -619,7 +627,8 @@ function telaLista(){
     h+='<div class="card mb"><div class="chead"><h2>'+abertos.length+' '+(abertos.length===1?'item':'itens')+' para comprar</h2>'+(feitos.length?'<button class="sub" data-act="limparFeitos" style="color:var(--purple);font-weight:600">Limpar marcados ('+feitos.length+')</button>':'')+'</div><div class="list">'+
       abertos.concat(feitos).map(function(l){
         var G=grupoDaLista(l), u=G&&G.maisBarato?G.ultRef[G.maisBarato]:null;
-        var info=G?(u?'Mais barato: '+esc(nomeMercado(G.maisBarato))+' · '+$$ref(u):esc(nomeMercado(G.mercados[0]))+' · '+$$(G.ultimo[G.mercados[0]].vUnit)):'item avulso';
+        var extra=(l.qtd?esc(l.qtd)+' · ':'')+(l.orig==='cardapio'?'do cardápio · ':'');
+        var info=extra+(G?(u?'Mais barato: '+esc(nomeMercado(G.maisBarato))+' · '+$$ref(u):esc(nomeMercado(G.mercados[0]))+' · '+$$(G.ultimo[G.mercados[0]].vUnit)):(l.orig==='cardapio'?'ainda não comprado antes':'item avulso'));
         return '<div class="li litem'+(l.feito?' feito':'')+'"><button class="chk" data-act="toggleLista" data-id="'+esc(l.id)+'" aria-label="Marcar">'+(l.feito?I.check:'')+'</button>'+
           '<button class="tx" style="text-align:left" '+(G?'data-act="produto" data-g="'+esc(G.id)+'"':'data-act="toggleLista" data-id="'+esc(l.id)+'"')+'><div class="t1">'+esc(G?nomeG(G):l.nome)+'</div><div class="t2 wrap">'+info+'</div></button>'+
           '<button class="iconbtn" style="width:34px;height:34px;border:0" data-act="tirarLista" data-id="'+esc(l.id)+'" aria-label="Remover">'+I.x.replace('<svg','<svg style="width:16px;height:16px"')+'</button></div>';
@@ -709,6 +718,7 @@ function refCand(c){
 }
 /* O que costuma levar: quilos/litros por compra, ou número de unidades */
 function alvoItem(it){
+  if(it.l&&it.l.alvoQ){var aq=it.l.alvoQ;return aq.base==='un'?{un:aq.q}:{qtd:aq.q,base:aq.base,un:1};}
   var G=it.G; if(!G) return {un:1};
   var kg=G.compras.filter(function(c){return c.ref!=null&&c.base===G.base&&G.base!=='un';}).map(function(c){return c.vTotal/c.ref;});
   if(kg.length) return {qtd:kg.reduce(function(a,b){return a+b;},0)/kg.length,base:G.base,un:qtdMedia(G)};
@@ -853,6 +863,111 @@ function verCands(iid,lid){
     cs.map(function(c,k){var r=refCand(c);return '<button class="li" data-act="escolher" data-i="'+esc(iid)+'" data-l="'+esc(lid)+'" data-k="'+k+'"><div class="tx"><div class="t1" style="font-weight:'+(e&&e.k===k?'700':'500')+'">'+(e&&e.k===k?'✓ ':'')+esc(c.nome)+'</div><div class="t2">'+(c.disp?'disponível':'sem estoque online')+(r.base!=='un'?' · '+$$(r.v)+uRef(r.base):'')+'</div></div><div class="vv">'+$$(c.preco)+'</div></button>';}).join('')+'</div>'+
     '<div class="stack mt"><button class="btn full" data-act="escolher" data-i="'+esc(iid)+'" data-l="'+esc(lid)+'" data-k="-1">Nenhum destes</button></div>');
 }
+
+/* ---------- Importar do Cardápio da Semana ----------
+   O Cardápio abre o Meu Mercado com a lista no endereço (#importar=...). Como plano B,
+   aceita o texto do botão "Copiar lista" do Cardápio colado aqui. */
+var CARDAPIO_URL='https://cardapio-navy-eta.vercel.app/#compras';
+function lerImportLink(){
+  var m=location.hash.match(/importar=([^&]+)/); if(!m) return false;
+  try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  try{
+    var b=m[1].replace(/-/g,'+').replace(/_/g,'/'); while(b.length%4)b+='=';
+    var d=JSON.parse(decodeURIComponent(escape(atob(b))));
+    if(!d||!Array.isArray(d.itens)) throw 0;
+    V.tab='lista'; render(); telaImportar(d); return true;
+  }catch(e){toast('Não consegui ler a lista do Cardápio.');return false;}
+}
+var UNID={kg:['kg',1000],g:['kg',1],ml:['L',1],l:['L',1000],un:['un',1]};
+function partesAlvo(parts){
+  var tot={};(parts||[]).forEach(function(p){var u=UNID[String(p.u||'').toLowerCase()];if(!u||!(p.q>0))return;tot[u[0]]=(tot[u[0]]||0)+p.q*u[1];});
+  if(tot.kg) return {q:tot.kg/1000,base:'kg'}; if(tot.L) return {q:tot.L/1000,base:'L'}; if(tot.un) return {q:Math.ceil(tot.un),base:'un'};
+  return null;
+}
+function textoParaItens(txt){
+  var out=[];
+  String(txt||'').split(/\n/).forEach(function(linha){
+    linha=linha.trim(); if(!/^[-•*]/.test(linha)) return;
+    linha=linha.replace(/^[-•*]\s*/,'');
+    var m=linha.match(/^([\d.,]+(?:\s?[¼½¾])?|[¼½¾])\s*(kg|g|ml|l|un|lata|latas|pct|maço|maco|dente|dentes|fatia|fatias|folha|folhas|xíc|xic|csp|csc|pitada)?\s+(.+)$/i);
+    if(m){var fr={'¼':.25,'½':.5,'¾':.75},q=0;m[1].trim().split(/\s+/).forEach(function(pt){q+=fr[pt]!=null?fr[pt]:(parseFloat(pt.replace(',','.'))||0);});out.push({n:m[3],qtd:m[1]+(m[2]?' '+m[2]:''),parts:[{q:q,u:(m[2]||'un').toLowerCase()}]});}
+    else out.push({n:linha,qtd:'',parts:[]});
+  });
+  return out;
+}
+function grupoParaIngrediente(n){
+  var c=calc(), best=null, bc=-1;
+  Object.keys(c.grupos).forEach(function(k){var G=c.grupos[k];if(pontua(n,{nome:G.nome,disp:true})>=0.99&&G.compras.length>bc){bc=G.compras.length;best=G;}});
+  return best;
+}
+function telaImportar(d){
+  var naLista={}; S.lista.forEach(function(l){if(l.feito)return;var G=grupoDaLista(l);if(G)naLista[G.id]=1;naLista['n:'+norm(l.nome)]=1;});
+  V.imp=(d.itens||[]).slice(0,80).map(function(x,i){
+    var G=grupoParaIngrediente(x.n), ja=(G&&naLista[G.id])||naLista['n:'+norm(x.n)];
+    return {i:i,n:String(x.n||'').slice(0,80),qtd:String(x.qtd||'').slice(0,30),parts:x.parts||[],G:G,ja:!!ja,on:!ja&&!!(x.parts&&x.parts.length)};
+  }).filter(function(x){return x.n;});
+  desenharImport(d.semana);
+}
+function desenharImport(semana){
+  var its=V.imp||[], n=its.filter(function(x){return x.on;}).length;
+  abrir(shead('Importar do Cardápio')+
+    (its.length?'<p class="sub" style="margin:-6px 0 10px">'+(semana?'Cardápio de '+esc(semana)+'. ':'')+'Desmarque o que você já tem em casa. Temperos "a gosto" e o que já está na lista vêm desmarcados.</p>'+
+    '<div class="list">'+its.map(function(x){
+      return '<button class="li litem'+(x.on?'':' off')+'" data-act="impTg" data-i="'+x.i+'" style="text-align:left"><span class="chk" style="'+(x.on?'background:var(--lime);border-color:var(--lime)':'')+'">'+(x.on?I.check:'')+'</span><div class="tx"><div class="t1">'+esc(x.n)+'</div><div class="t2 wrap">'+(x.qtd?esc(x.qtd):'a gosto')+(x.ja?' · já está na lista':'')+(x.G?' · você costuma comprar <b>'+esc(nomeG(x.G))+'</b>':'')+'</div></div></button>';
+    }).join('')+'</div>'+
+    '<div class="stack mt" style="position:sticky;bottom:0;background:var(--bg2);padding-top:8px"><button class="btn pri full" data-act="impOk"'+(n?'':' disabled style="opacity:.5"')+'>Adicionar '+n+' '+(n===1?'item':'itens')+' à lista</button></div>'
+    :'<div class="empty"><b>Nada para importar</b>Cole a lista copiada no Cardápio da Semana.</div>'));
+}
+function importarCardapio(){
+  abrir(shead('Importar do Cardápio')+
+    '<div class="card mb"><b>Jeito mais rápido</b><p class="sub" style="margin:6px 0 12px">No Cardápio da Semana, abra <b>Compras</b> e toque em <b>Enviar para o Meu Mercado</b>. A lista chega aqui pronta.</p><a class="btn pri full" href="'+CARDAPIO_URL+'" target="_blank" rel="noopener">Abrir o Cardápio da Semana</a></div>'+
+    '<div class="card"><b>Ou cole a lista</b><p class="sub" style="margin:6px 0 10px">No Cardápio, toque em <b>Copiar lista</b> e cole aqui. No iPhone, com o app instalado na tela de início, use este caminho.</p>'+
+    '<textarea id="txtCardapio" rows="6" placeholder="Lista de compras · ..."></textarea>'+
+    '<div class="stack mt"><button class="btn full" data-act="impColar">Colar da área de transferência</button><button class="btn pur full" data-act="impTexto">Ler lista colada</button></div></div>');
+}
+
+/* ---------- Novidades da versão ---------- */
+var VERSAO=7;
+var NOVIDADES=[
+ {e:'🛒',t:'Lista de compras',d:'Nova aba Lista: adicione itens, veja o mercado mais barato de cada um e sugestões do que você costuma recomprar. Ao ler a nota, o que você comprou é marcado sozinho.',ir:{tab:'lista',sel:'#addLista',dica:'Digite um produto aqui ou toque nas sugestões abaixo'}},
+ {e:'🔎',t:'Preços de hoje',d:'Pesquisa a sua lista nos sites do Muffato, Angeloni e Atacadão perto de você e mostra o total em cada um, para você ir onde economiza mais.',ir:{tab:'lista',sel:'[data-act=pesquisarPrecos]',dica:'Toque aqui com a lista pronta',precisa:'lista'}},
+ {e:'🍽️',t:'Importar do Cardápio da Semana',d:'Traga os ingredientes do cardápio direto para a lista, sem digitar.',ir:{tab:'lista',sel:'[data-act=importarCardapio]',dica:'Toque aqui para trazer os ingredientes'}},
+ {e:'🟢',t:'Preços que subiram e baixaram',d:'Na aba Produtos → Repetidos: verde se baixou, vermelho se subiu, sempre comparando o preço do quilo ou do litro.',ir:{tab:'produtos',pview:'repetidos',sel:'[data-act=rep][data-v=todos]',dica:'Toque em Subiram ou Baixaram para filtrar'}},
+ {e:'📦',t:'Embalagens diferentes separadas',d:'Arroz de 1 kg e de 5 kg com o mesmo nome na nota não são mais misturados. Abra o produto e informe o peso da embalagem para comparar pelo quilo.',ir:{tab:'produtos',pview:'todos',sel:'#busca',dica:'Abra um produto para informar o peso da embalagem'}},
+ {e:'🧾',t:'Aviso ao salvar a nota',d:'Logo depois de ler uma nota, aparece o que subiu e o que baixou desde a compra anterior.',ir:{act:'scan'}},
+ {e:'🎯',t:'Meta do mês e categorias',d:'No Início: defina uma meta de gasto e veja quanto foi para hortifrúti, carnes, limpeza…',ir:{tab:'inicio',sel:'[data-act=meta]',dica:'Toque aqui para definir sua meta mensal'}},
+ {e:'☁️',t:'Backup em 1 toque',d:'Em Ajustes, envie o backup para o Google Drive, iCloud ou WhatsApp. O app lembra você a cada 7 dias.',ir:{act:'ajustes',sel:'.sheet [data-act=backupJa]',dica:'Toque aqui para guardar uma cópia dos seus dados'}}
+];
+function verNovidades(){
+  S.versaoVista=VERSAO; save();
+  abrir(shead('Novidades')+
+    '<p class="sub" style="margin:-6px 0 14px">O que mudou no Meu Mercado. Toque em <b>Mostrar onde</b> para ir direto ao botão.</p>'+
+    NOVIDADES.map(function(x,i){return '<div class="card mb" style="padding:14px"><div style="display:flex;gap:12px;align-items:flex-start"><span style="font-size:24px;line-height:1">'+x.e+'</span><div style="flex:1;min-width:0"><b>'+x.t+'</b><p class="sub" style="margin:4px 0 0">'+x.d+'</p>'+
+      (x.ir&&x.ir.sel?'<button class="btn" style="margin-top:10px;padding:8px 14px;font-size:13px" data-act="mostrarOnde" data-i="'+i+'">Mostrar onde →</button>':'')+'</div></div></div>';}).join('')+
+    '<button class="btn pri full" data-act="fechar">Entendi</button>');
+}
+function mostrarOnde(i){
+  var ir=NOVIDADES[i].ir; fechar();
+  if(ir.tab){V.tab=ir.tab;if(ir.pview)V.pview=ir.pview;render();}
+  if(ir.act==='ajustes') telaAjustes();
+  setTimeout(function(){
+    var el=document.querySelector(ir.sel);
+    if(!el){toast(ir.precisa==='lista'?'Adicione itens à lista para ver este botão':'Não encontrei esse botão agora');return;}
+    el.scrollIntoView({block:'center',behavior:'auto'});
+    var sh=document.getElementById('sheet'); if(sh&&sh.contains(el)){var r0=el.getBoundingClientRect(),rs=sh.getBoundingClientRect();sh.scrollTop+=r0.top-rs.top-rs.height/2+r0.height/2;}
+    setTimeout(function(){dica(el,ir.dica);},80);
+  },120);
+}
+function dica(el,txt){
+  tirarDica(); el.classList.add('dica-on');
+  var r=el.getBoundingClientRect(), b=document.createElement('div'); b.className='dica-balao'; b.id='dicaBalao'; b.textContent=txt||'';
+  document.body.appendChild(b);
+  var w=b.offsetWidth, x=Math.max(12,Math.min(window.innerWidth-w-12,r.left+r.width/2-w/2)), embaixo=r.bottom+b.offsetHeight+16<window.innerHeight-90;
+  b.style.left=x+'px'; b.style.top=(embaixo?r.bottom+12:r.top-b.offsetHeight-12)+'px'; b.classList.add(embaixo?'baixo':'cima');
+  b.style.setProperty('--seta',Math.max(16,Math.min(w-16,r.left+r.width/2-x))+'px');
+  V.dicaEl=el; clearTimeout(V.dicaT); V.dicaT=setTimeout(tirarDica,7000);
+}
+function tirarDica(){var b=document.getElementById('dicaBalao');if(b)b.remove();if(V.dicaEl)V.dicaEl.classList.remove('dica-on');V.dicaEl=null;}
 
 /* ---------- Produtos ---------- */
 function telaProdutos(){
@@ -1117,6 +1232,7 @@ function telaAjustes(){
    '<p class="sub" style="margin:0 0 12px">Último backup: <b style="color:var(--text)">'+(S.ultimoBackup?new Date(S.ultimoBackup).toLocaleDateString('pt-BR'):'nunca')+'</b></p>'+
    '<div class="stack"><button class="btn pri full" data-act="backupJa">Enviar backup (Drive, iCloud, WhatsApp…)</button><button class="btn full" data-act="exportar">Baixar arquivo de backup</button><button class="btn full" data-act="importar">Restaurar backup</button></div></div>'+
    '<div class="card mb"><b>Meta de gasto mensal</b><p class="sub" style="margin:6px 0 12px">'+(S.meta?'Atual: <b style="color:var(--text)">'+$$(S.meta)+'</b> por mês.':'Nenhuma meta definida.')+'</p><button class="btn full" data-act="meta">'+(S.meta?'Alterar meta':'Definir meta')+'</button></div>'+
+   '<button class="btn full mb" data-act="novidades">✨ Novidades da versão</button>'+
    '<div class="card mb"><b>Indicar para alguém</b><p class="sub" style="margin:6px 0 12px">Cada pessoa usa o app com os próprios dados, salvos só no celular dela.</p><button class="btn pri full" data-act="compartilhar">Compartilhar app</button></div>'+
    '<div class="card mb"><b>Instalar no celular</b><p class="sub" style="margin:6px 0 0"><b>Android (Chrome):</b> menu ⋮ → <i>Instalar app</i> ou <i>Adicionar à tela inicial</i>.<br><b>iPhone (Safari):</b> botão compartilhar → <i>Adicionar à Tela de Início</i>.</p></div>'+
    '<div class="stack">'+(temEx?'<button class="btn full" data-act="limparExemplo">Apagar dados de exemplo</button>':'<button class="btn full" data-act="exemplo">Carregar dados de exemplo</button>')+
@@ -1177,6 +1293,7 @@ function limparExemplo(){S.notas=S.notas.filter(function(n){return n.origem!=='e
 /* ---------- eventos ---------- */
 var tt;function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(function(){t.style.display='none';},2600);}
 document.addEventListener('click',function(e){
+  if(V.dicaEl&&!e.target.closest('#dicaBalao')) tirarDica();
   var t=e.target.closest('[data-tab],[data-act]'); if(!t) { if(e.target.id==='overlay') fechar(); return; }
   if(t.dataset.tab){V.tab=t.dataset.tab;fechar();render();window.scrollTo(0,0);return;}
   var a=t.dataset.act;
@@ -1227,6 +1344,16 @@ document.addEventListener('click',function(e){
       S.pesos[gp]=tp; save(); render(); verProduto(gp); toast('Agora comparando por '+(tp.base==='L'?'litro':'quilo'));
       break;
     case 'pesquisarPrecos': pesquisarPrecos(); break;
+    case 'importarCardapio': importarCardapio(); break;
+    case 'impColar': if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(tx){var ta=document.getElementById('txtCardapio');if(ta)ta.value=tx;},function(){toast('Segure no campo e toque em Colar');});}else toast('Segure no campo e toque em Colar'); break;
+    case 'impTexto': var its0=textoParaItens((document.getElementById('txtCardapio')||{}).value); if(!its0.length){toast('Não achei itens. Cole a lista do botão Copiar lista do Cardápio.');break;} telaImportar({itens:its0}); break;
+    case 'impTg': V.imp.forEach(function(x){if(x.i===+t.dataset.i)x.on=!x.on;}); var top0=document.getElementById('sheet').scrollTop; desenharImport(); document.getElementById('sheet').scrollTop=top0; break;
+    case 'impOk':
+      var nAdd=0; (V.imp||[]).forEach(function(x){if(!x.on)return;var al=partesAlvo(x.parts);
+        S.lista.push({id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),g:x.G?x.G.id:null,nome:x.G?x.G.nome:x.n,feito:false,qtd:x.qtd,orig:'cardapio',alvoQ:al,termo:x.G?undefined:x.n});nAdd++;});
+      V.imp=null; save(); fechar(); V.tab='lista'; render(); toast(nAdd+' itens do cardápio na lista'); break;
+    case 'novidades': verNovidades(); break;
+    case 'mostrarOnde': mostrarOnde(+t.dataset.i); break;
     case 'raio': S.raio=+t.dataset.v; save(); pesquisarPrecos(); break;
     case 'cands': verCands(t.dataset.i,t.dataset.l); break;
     case 'escolher': if(S.pesquisa){S.pesquisa.escolha[t.dataset.i+'|'+t.dataset.l]=+t.dataset.k;save();} fechar(); render(); break;
@@ -1261,6 +1388,12 @@ document.addEventListener('keydown',function(e){
 
 if(navigator.storage&&navigator.storage.persist){try{navigator.storage.persist().catch(function(){});}catch(e){}}
 render();
+(function(){
+  if(lerImportLink()) { if(!S.versaoVista){S.versaoVista=VERSAO;save();} return; }
+  if(!S.notas.length&&!S.versaoVista){S.versaoVista=VERSAO;save();return;} // quem acabou de chegar não precisa de novidades
+  if((S.versaoVista||0)<VERSAO) setTimeout(verNovidades,400);
+})();
+window.addEventListener('hashchange',function(){if(/importar=/.test(location.hash))lerImportLink();});
 if('serviceWorker' in navigator && location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(function(){});}
 // abrir direto pela leitura de QR feita pela câmera do celular: .../?nota=<link>
 var qp=new URLSearchParams(location.search).get('nota'); if(qp){telaScan();pararCamera();buscarNota(qp);history.replaceState(null,'',location.pathname);}
