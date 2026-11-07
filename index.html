@@ -451,7 +451,7 @@ var SIDE=[['inicio','Início',I.home],['lista','Lista de compras',I.list],['nota
 function renderNav(){
   document.getElementById('nav').innerHTML=NAV.map(function(n){
     if(n[0]==='scan') return '<button class="scan" data-act="scan" aria-label="Ler nota">'+n[2]+'</button>';
-    return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]?'on':'')+'">'+n[2]+'<span>'+n[1]+'</span></button>';
+    return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]||(V.tab==='precos'&&n[0]==='lista')?'on':'')+'">'+n[2]+'<span>'+n[1]+'</span></button>';
   }).join('');
   document.getElementById('side').innerHTML='<div class="brand"><span class="logo">'+I.cart+'</span>Meu Mercado</div>'+
     SIDE.map(function(n){return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]?'on':'')+'">'+n[2]+n[1]+'</button>';}).join('')+
@@ -474,6 +474,7 @@ function render(){
   if(V.tab==='inicio') h=telaInicio();
   else if(V.tab==='notas') h=telaNotas();
   else if(V.tab==='lista') h=telaLista();
+  else if(V.tab==='precos') h=telaPrecos();
   else if(V.tab==='produtos') h=telaProdutos();
   else if(V.tab==='mercados') h=telaMercados();
   document.getElementById('main').innerHTML=h;
@@ -623,6 +624,12 @@ function telaLista(){
           '<button class="tx" style="text-align:left" '+(G?'data-act="produto" data-g="'+esc(G.id)+'"':'data-act="toggleLista" data-id="'+esc(l.id)+'"')+'><div class="t1">'+esc(G?nomeG(G):l.nome)+'</div><div class="t2 wrap">'+info+'</div></button>'+
           '<button class="iconbtn" style="width:34px;height:34px;border:0" data-act="tirarLista" data-id="'+esc(l.id)+'" aria-label="Remover">'+I.x.replace('<svg','<svg style="width:16px;height:16px"')+'</button></div>';
       }).join('')+'</div></div>';
+    if(abertos.length){
+      var ult=S.pesquisa?new Date(S.pesquisa.quando):null;
+      h+='<div class="card mb" style="background:linear-gradient(135deg,rgba(200,244,58,.10),rgba(199,125,255,.10)),var(--card)"><b>Quanto custa hoje?</b><p class="sub" style="margin:4px 0 12px">Pesquisa os itens da lista nos sites do Muffato, Angeloni e Atacadão perto de você e mostra o total em cada um.</p>'+
+        '<button class="btn pri full" data-act="pesquisarPrecos">'+I.search.replace('<svg','<svg style="width:18px;height:18px"')+' Pesquisar preços de hoje</button>'+
+        (ult?'<button class="btn full mt" data-tab="precos">Ver última pesquisa ('+ult.toLocaleDateString('pt-BR').slice(0,5)+' '+ult.toTimeString().slice(0,5)+')</button>':'')+'</div>';
+    }
     var gs=abertos.map(grupoDaLista).filter(Boolean);
     if(gs.length){
       var o=ondeComprar(gs);
@@ -657,6 +664,190 @@ function sugAdd(q){
   var c=calc(), gs=Object.keys(c.grupos).map(function(k){return c.grupos[k];}).filter(function(G){return norm(G.nome).indexOf(q)>=0;})
     .sort(function(a,b){return b.compras.length-a.compras.length;}).slice(0,5);
   return gs.length?'<div class="chips mt">'+gs.map(function(G){return '<button class="badge b-pur" style="font-size:13px;padding:7px 11px" data-act="addGrupo" data-g="'+esc(G.id)+'">+ '+esc(nomeG(G))+'</button>';}).join('')+'</div>':'';
+}
+
+/* ---------- Preços de hoje (sites dos mercados de Curitiba) ---------- */
+var LOJAS=[
+ {id:'muffato-champagnat',rede:'Muffato',nome:'Muffato Champagnat',pts:[[-25.43326,-49.29847]]},
+ {id:'muffato-portao',rede:'Muffato',nome:'Muffato Portão',pts:[[-25.47814,-49.28888]]},
+ {id:'muffato-santafelicidade',rede:'Muffato',nome:'Muffato Sta. Felicidade',pts:[[-25.41062,-49.34836]]},
+ {id:'muffato-taruma',rede:'Muffato',nome:'Muffato Tarumã',pts:[[-25.42910,-49.22952]]},
+ {id:'muffato-sjp',rede:'Muffato',nome:'Muffato S. J. dos Pinhais',pts:[[-25.53975,-49.19543]]},
+ {id:'angeloni',rede:'Angeloni',nome:'Angeloni',obs:'preço da loja online (Bigorrilho)',pts:[[-25.43874,-49.29504],[-25.45437,-49.28876],[-25.43488,-49.30682]]},
+ {id:'atacadao',rede:'Atacadão',nome:'Atacadão',obs:'preço de Curitiba',pts:[[-25.39871,-49.21438],[-25.45080,-49.24325],[-25.46412,-49.30142],[-25.38947,-49.23657],[-25.51345,-49.25759],[-25.41529,-49.35206]]}
+];
+function lojaInfo(id){for(var i=0;i<LOJAS.length;i++)if(LOJAS[i].id===id)return LOJAS[i];return {id:id,nome:id,pts:[]};}
+function distKm(a,b){var R=6371,r=Math.PI/180,dLa=(b[0]-a[0])*r,dLo=(b[1]-a[1])*r,x=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLo/2)*Math.sin(dLo/2);return 2*R*Math.asin(Math.sqrt(x));}
+function distLoja(L,pos){if(!pos)return null;var m=null;L.pts.forEach(function(p){var d=distKm(pos,p);if(m==null||d<m)m=d;});return m;}
+var ABREV={TORR:'torrado',TRAD:'tradicional',INTEG:'integral',BCO:'branco',CRIST:'cristal',REFRIG:'refrigerante',REFRI:'refrigerante',DET:'detergente',LIQ:'liquido',AMAC:'amaciante',DESOD:'desodorante',SHAMP:'shampoo',MOLH:'molho',MAC:'macarrao',ESPAG:'espaguete',CHOC:'chocolate',BISC:'biscoito',REQ:'requeijao',IOG:'iogurte',QJO:'queijo',MUSS:'mussarela',PRES:'presunto',FGO:'frango',PTO:'peito',T1:'tipo 1',TP1:'tipo 1',PARB:'parboilizado',TRADIC:'tradicional',ACUC:'acucar',FEIJ:'feijao',SACH:'sache',SUAV:'suave'};
+var LIXO={UN:1,UND:1,PCT:1,PC:1,CX:1,FD:1,SC:1,LT:1,KG:1,GRANEL:1,EMB:1,C:1};
+function termoAuto(nome){
+  var t=tamanho(nome), sem=String(nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/(\d+\s*X\s*)?\d+(?:[.,]\d+)?\s*(KGS?|KILOS?|QUILOS?|K|GRAMAS|GRS?|G|ML|LITROS?|LTS?|L)(?![A-Z])/g,' ');
+  var w=norm(sem).split(' ').filter(Boolean);
+  var out=[];w.forEach(function(x){if(LIXO[x]||/^\d+$/.test(x)&&out.length===0)return;var e=ABREV[x];if(e===undefined&&x.length<2&&!/^\d$/.test(x))return;out.push((e||x).toLowerCase());});
+  var s=out.slice(0,5).join(' ');
+  if(t){var v=t.q,u=t.base==='L'?'l':'kg';if(v<1){v=Math.round(v*1000);u=t.base==='L'?'ml':'g';}s+=' '+String(v).replace('.',',')+u;}
+  return s.trim();
+}
+var STOP={DE:1,DA:1,DO:1,COM:1,SEM:1,PARA:1,TIPO:1,TRADICIONAL:1};
+function toks(s){return norm(s).split(' ').filter(function(w){return w.length>=3&&!/^\d/.test(w)&&!STOP[w];}).map(function(w){return ABREV[w]?norm(ABREV[w]).split(' ')[0]:w;});}
+/* Nota de 0 a 1+ para "o produto do site é o mesmo da lista?" */
+function pontua(alvo,c){
+  var a=toks(alvo), b=toks(c.nome+' '+(c.marca||'')); if(!a.length||!b.length) return 0;
+  var bate=function(w){return b.some(function(x){return x===w||(w.length>=3&&x.indexOf(w)===0)||(x.length>=4&&w.indexOf(x)===0);});};
+  if(!bate(a[0])) return 0; // o tipo do produto (arroz, café...) precisa bater
+  var hit=a.filter(bate).length, sc=hit/a.length;
+  var ta=tamanho(alvo), tc=tamanho(c.nome);
+  if(ta&&tc){sc+=(ta.base===tc.base&&Math.abs(tc.q/ta.q-1)<0.03)?0.3:-0.35;}
+  if(!c.disp) sc-=0.15;
+  return sc;
+}
+function refCand(c){
+  if(c.un==='kg') return {v:c.preco/(c.mult||1),base:'kg'};
+  var t=tamanho(c.nome); if(t) return {v:c.preco/t.q,base:t.base};
+  return {v:c.preco,base:'un'};
+}
+/* O que costuma levar: quilos/litros por compra, ou número de unidades */
+function alvoItem(it){
+  var G=it.G; if(!G) return {un:1};
+  var kg=G.compras.filter(function(c){return c.ref!=null&&c.base===G.base&&G.base!=='un';}).map(function(c){return c.vTotal/c.ref;});
+  if(kg.length) return {qtd:kg.reduce(function(a,b){return a+b;},0)/kg.length,base:G.base,un:qtdMedia(G)};
+  return {un:qtdMedia(G)};
+}
+function custo(it,c){
+  var a=alvoItem(it), r=refCand(c);
+  if(a.qtd&&r.base===a.base) return r.v*a.qtd;
+  return c.preco*Math.max(1,Math.round(a.un||1));
+}
+function itensPesquisa(){
+  return S.lista.filter(function(l){return !l.feito;}).map(function(l){var G=grupoDaLista(l);return {id:l.id,l:l,G:G,nome:G?nomeG(G):l.nome,alvo:G?G.nome:l.nome,q:l.termo||termoAuto(G?G.nome:l.nome)};});
+}
+function escolhido(P,it,lojaId){
+  var r=P.res[lojaId]; if(!r||!r[it.id]) return null; var cs=r[it.id];
+  var k=P.escolha[it.id+'|'+lojaId];
+  if(k===-1) return null;
+  if(k!=null&&cs[k]) return {c:cs[k],k:k,manual:true};
+  var best=null,bk=-1,bs=0.55;
+  cs.forEach(function(c,i){var s=pontua(it.alvo+' '+it.q,c);if(s>bs){bs=s;best=c;bk=i;}});
+  return best?{c:best,k:bk,score:bs}:null;
+}
+function pedirPrecos(lojaId,itens){
+  return fetch('api/precos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loja:lojaId,cep:S.cep||'',itens:itens})})
+    .then(function(r){if(!r.ok)throw new Error('http');return r.json();})
+    .then(function(d){var o={};(d.itens||[]).forEach(function(x){o[x.id]=(x.cands||[]).slice(0,6).map(function(c){delete c.img;return c;});});return o;});
+}
+function localizacao(){
+  return new Promise(function(ok){
+    if(!navigator.geolocation){ok(null);return;}
+    navigator.geolocation.getCurrentPosition(function(p){ok([p.coords.latitude,p.coords.longitude]);},function(e){ok({erro:e&&e.code===1?'negada':'indisponivel'});},{enableHighAccuracy:false,timeout:10000,maximumAge:600000});
+  });
+}
+function lojasPerto(pos){
+  var raio=S.raio||10;
+  var ls=LOJAS.map(function(L){return {L:L,d:distLoja(L,pos)};});
+  if(pos){ls.sort(function(a,b){return a.d-b.d;});var dentro=ls.filter(function(x){return raio>=99||x.d<=raio;});ls=dentro.length>=2?dentro:ls.slice(0,3);}
+  return ls;
+}
+function pesquisarPrecos(){
+  var its=itensPesquisa(); if(!its.length){toast('Sua lista não tem itens para pesquisar');return;}
+  V.tab='precos'; fechar();
+  V.pz={estado:'local',msg:'Pegando sua localização…'}; render(); window.scrollTo(0,0);
+  localizacao().then(function(pos){
+    var temPos=Array.isArray(pos);
+    var ls=lojasPerto(temPos?pos:null);
+    var P={quando:new Date().toISOString(),pos:temPos?pos:null,semLocal:temPos?'':(pos&&pos.erro)||'indisponivel',lojas:ls.map(function(x){return {id:x.L.id,d:x.d};}),res:{},escolha:{},termos:{}};
+    its.forEach(function(it){P.termos[it.id]=it.q;});
+    V.pz={estado:'busca',feitas:0,total:ls.length,P:P}; render();
+    var q1=its.map(function(it){return {id:it.id,q:it.q};});
+    return Promise.all(ls.map(function(x){
+      return pedirPrecos(x.L.id,q1).then(function(o){P.res[x.L.id]=o;},function(){P.res[x.L.id]=null;}).then(function(){V.pz.feitas++;if(V.tab==='precos')render();});
+    })).then(function(){
+      // 2ª rodada: onde não achou, procura pelo código de barras encontrado em outra loja (mesmo produto exato)
+      var pend={};
+      its.forEach(function(it){
+        var ean=null,best=0;
+        P.lojas.forEach(function(x){var e=escolhido(P,it,x.id);if(e&&e.c.ean&&e.score>best){best=e.score;ean=e.c.ean;}});
+        if(!ean) return;
+        P.lojas.forEach(function(x){if(!P.res[x.id])return;var e=escolhido(P,it,x.id);if(!e||e.c.ean!==ean)(pend[x.id]=pend[x.id]||[]).push({id:it.id,ean:ean,q:''});});
+      });
+      return Promise.all(Object.keys(pend).map(function(lid){
+        return pedirPrecos(lid,pend[lid]).then(function(o){Object.keys(o).forEach(function(iid){if(o[iid].length){var cur=P.res[lid][iid]||[];var eans={};cur.forEach(function(c){eans[c.ean]=1;});P.res[lid][iid]=o[iid].filter(function(c){return !eans[c.ean];}).concat(cur);}});},function(){});
+      }));
+    }).then(function(){
+      S.pesquisa=P; save(); V.pz={estado:'pronto'}; if(V.tab==='precos') render();
+    });
+  });
+}
+function pesquisarItem(id){
+  var P=S.pesquisa; if(!P) return; var it=itensPesquisa().filter(function(x){return x.id===id;})[0]; if(!it) return;
+  P.termos[id]=it.q; P.lojas.forEach(function(x){delete P.escolha[id+'|'+x.id];});
+  V.pz={estado:'busca',feitas:0,total:P.lojas.length,P:P,item:id}; render();
+  Promise.all(P.lojas.map(function(x){return pedirPrecos(x.id,[{id:id,q:it.q}]).then(function(o){P.res[x.id]=P.res[x.id]||{};P.res[x.id][id]=o[id]||[];},function(){}).then(function(){V.pz.feitas++;render();});}))
+    .then(function(){S.pesquisa=P;save();V.pz={estado:'pronto'};render();});
+}
+function resumoPesquisa(P,its){
+  var ativas=P.lojas.filter(function(x){return P.res[x.id];});
+  var tab=ativas.map(function(x){
+    var tot=0,n=0,custos={};
+    its.forEach(function(it){var e=escolhido(P,it,x.id);if(e){var v=custo(it,e.c);custos[it.id]=v;tot+=v;n++;}});
+    return {id:x.id,d:x.d,tot:tot,n:n,custos:custos};
+  });
+  var comum=its.filter(function(it){return tab.length&&tab.every(function(t){return t.custos[it.id]!=null;});});
+  tab.forEach(function(t){t.comum=comum.reduce(function(a,it){return a+t.custos[it.id];},0);});
+  var usaComum=comum.length>=Math.max(1,Math.ceil(its.length/2));
+  tab.sort(function(a,b){return usaComum?(a.comum-b.comum):((b.n-a.n)||(a.tot-b.tot));});
+  var melhor=0,achados=0; its.forEach(function(it){var m=null;tab.forEach(function(t){var v=t.custos[it.id];if(v!=null&&(m==null||v<m))m=v;});if(m!=null){melhor+=m;achados++;}});
+  return {tab:tab,comum:comum,usaComum:usaComum,melhor:melhor,achados:achados};
+}
+function telaPrecos(){
+  var h='<div class="top"><button class="iconbtn" data-tab="lista" aria-label="Voltar">'+I.left+'</button><div class="brand" style="font-size:17px">Preços de hoje</div><button class="iconbtn" data-act="pesquisarPrecos" aria-label="Atualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg></button></div>';
+  var z=V.pz||{};
+  if(z.estado==='local'||z.estado==='busca'){
+    h+='<div class="card mb" style="display:flex;gap:12px;align-items:center"><span class="spin"></span><div><b>'+(z.estado==='local'?'Pegando sua localização…':'Pesquisando nos sites dos mercados…')+'</b><div class="sub">'+(z.estado==='busca'?z.feitas+' de '+z.total+' lojas':'Permita o acesso à localização para ver as lojas perto de você.')+'</div></div></div>';
+    if(!S.pesquisa||z.estado==='local'||!z.item) return h;
+  }
+  var P=S.pesquisa, its=itensPesquisa();
+  if(!P){return h+'<div class="card"><div class="empty"><b>Nenhuma pesquisa ainda</b>Monte sua lista e toque em pesquisar.</div><button class="btn pri full" data-act="pesquisarPrecos">Pesquisar preços de hoje</button></div>';}
+  var dt=new Date(P.quando);
+  h+='<div class="card mb"><div class="chead" style="margin-bottom:8px"><h2 style="font-size:16px">'+(P.pos?'Lojas perto de você':'Todas as lojas')+'</h2><span class="sub">'+dt.toLocaleDateString('pt-BR')+' '+dt.toTimeString().slice(0,5)+'</span></div>'+
+    (P.pos?'':'<p class="sub" style="margin:0 0 10px">'+(P.semLocal==='negada'?'A localização foi negada. Libere a localização para o app nas configurações do navegador para filtrar por distância.':'Não consegui pegar sua localização, então mostro todas as lojas.')+'</p>')+
+    '<div class="seg">'+[[5,'5 km'],[10,'10 km'],[20,'20 km'],[99,'Todas']].map(function(r){return '<button data-act="raio" data-v="'+r[0]+'" class="'+((S.raio||10)===r[0]?'on':'')+'">'+r[1]+'</button>';}).join('')+'</div></div>';
+  var R=resumoPesquisa(P,its);
+  if(!R.tab.length) return h+'<div class="err">Não consegui consultar os sites agora. Tente de novo em alguns minutos.</div>';
+  var top=R.tab[0], base=R.usaComum?'comum':'tot';
+  h+='<div class="card mb"><div class="chead"><h2>Onde comprar</h2><span class="sub">'+its.length+' itens</span></div>'+
+    (R.usaComum?'<p class="sub" style="margin:-6px 0 12px">Comparando os '+R.comum.length+' itens encontrados em todas as lojas, nas quantidades que você costuma levar.</p>':'<p class="sub" style="margin:-6px 0 12px">Poucos itens aparecem em todas as lojas; ordenei pela quantidade de itens encontrados.</p>')+
+    R.tab.map(function(t,i){var L=lojaInfo(t.id),dif=t[base]-top[base];
+      return '<div class="rank '+(i===0?'first':'')+'"><span class="pos">'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(L.nome)+'</b><b>'+$$(t[base])+'</b></div>'+
+        '<div class="sub">'+(t.d!=null?(t.d<1?'<1':Math.round(t.d))+' km · ':'')+t.n+' de '+its.length+' itens'+(R.usaComum&&t.n>R.comum.length?' · todos: '+$$(t.tot):'')+(i>0&&dif>0.005?' · <span style="color:var(--red)">+'+$$(dif)+'</span>':'')+(L.obs?' · '+L.obs:'')+'</div></div></div>';
+    }).join('')+
+    (R.achados>1?'<div class="ok mt">Comprando cada item onde está mais barato: <b>'+$$(R.melhor)+'</b> ('+R.achados+' itens)</div>':'')+'</div>';
+  // por produto
+  h+='<h2 style="margin:18px 2px 10px">Por produto</h2>';
+  its.forEach(function(it){
+    var linhas=R.tab.map(function(t){return {t:t,e:escolhido(P,it,t.id)};});
+    var vs=linhas.filter(function(x){return x.e;}).map(function(x){return custo(it,x.e.c);}), mn=vs.length?Math.min.apply(null,vs):null, mx=vs.length?Math.max.apply(null,vs):null;
+    var buscando=z.estado==='busca'&&z.item===it.id;
+    h+='<div class="card mb"><div class="chead" style="margin-bottom:6px"><div style="min-width:0"><b style="display:block">'+esc(it.nome)+'</b><button class="sub" data-act="termo" data-id="'+esc(it.id)+'" style="text-align:left">buscado como “'+esc(P.termos[it.id]||it.q)+'” · <span style="color:var(--purple);font-weight:600">mudar</span></button></div>'+
+      (vs.length>1&&mx-mn>0.005?'<span class="badge b-good">economia '+$$(mx-mn)+'</span>':'')+'</div>'+
+      (buscando?'<div class="sub" style="display:flex;gap:8px;align-items:center;padding:8px 0"><span class="spin"></span> pesquisando…</div>':
+      '<div class="list">'+linhas.map(function(x){
+        var L=lojaInfo(x.t.id);
+        if(!x.e) return '<div class="li" style="padding:9px 0"><div class="tx"><div class="t1" style="font-weight:500">'+esc(L.nome)+'</div><div class="t2">não encontrado'+(P.res[x.t.id]&&P.res[x.t.id][it.id]&&P.res[x.t.id][it.id].length?' · <button data-act="cands" data-i="'+esc(it.id)+'" data-l="'+esc(x.t.id)+'" style="color:var(--purple);font-weight:600">ver opções</button>':'')+'</div></div><div class="vv sub">—</div></div>';
+        var c=x.e.c, r=refCand(c), v=custo(it,c), barato=vs.length>1&&Math.abs(v-mn)<0.005, caro=vs.length>1&&Math.abs(v-mx)<0.005&&mx-mn>0.005;
+        return '<button class="li" style="padding:9px 0" data-act="cands" data-i="'+esc(it.id)+'" data-l="'+esc(x.t.id)+'"><div class="tx"><div class="t1" style="font-weight:500">'+esc(L.nome)+'</div><div class="t2 wrap">'+esc(c.nome)+(c.disp?'':' · <span style="color:#f0c46a">sem estoque online</span>')+(x.e.manual?' · escolhido por você':'')+'</div></div>'+
+          '<div class="vv"><div class="pr '+(barato?'good':caro?'bad':'')+'">'+$$(c.preco)+(c.un==='kg'?'<span class="un">/kg</span>':'')+'</div>'+(r.base!=='un'&&c.un!=='kg'?'<div class="sub">'+$$(r.v)+uRef(r.base)+'</div>':'')+(c.de?'<div class="sub" style="text-decoration:line-through">'+$$(c.de)+'</div>':'')+'</div></button>';
+      }).join('')+'</div>')+'</div>';
+  });
+  h+='<p class="sub" style="text-align:center;margin:14px 8px 0">Preços dos sites dos mercados no momento da pesquisa. Na loja física o preço pode ser diferente. Condor e Carrefour não liberam consulta de preços pelo site.</p>';
+  return h;
+}
+function verCands(iid,lid){
+  var P=S.pesquisa; if(!P) return; var it=itensPesquisa().filter(function(x){return x.id===iid;})[0]; if(!it) return;
+  var cs=(P.res[lid]||{})[iid]||[], e=escolhido(P,it,lid);
+  abrir(shead(esc(lojaInfo(lid).nome))+'<p class="sub" style="margin:-6px 0 10px">Qual destes é o produto da sua lista (<b>'+esc(it.nome)+'</b>)?</p><div class="list">'+
+    cs.map(function(c,k){var r=refCand(c);return '<button class="li" data-act="escolher" data-i="'+esc(iid)+'" data-l="'+esc(lid)+'" data-k="'+k+'"><div class="tx"><div class="t1" style="font-weight:'+(e&&e.k===k?'700':'500')+'">'+(e&&e.k===k?'✓ ':'')+esc(c.nome)+'</div><div class="t2">'+(c.disp?'disponível':'sem estoque online')+(r.base!=='un'?' · '+$$(r.v)+uRef(r.base):'')+'</div></div><div class="vv">'+$$(c.preco)+'</div></button>';}).join('')+'</div>'+
+    '<div class="stack mt"><button class="btn full" data-act="escolher" data-i="'+esc(iid)+'" data-l="'+esc(lid)+'" data-k="-1">Nenhum destes</button></div>');
 }
 
 /* ---------- Produtos ---------- */
@@ -1030,6 +1221,17 @@ document.addEventListener('click',function(e){
       var tp=tamanho(resp.replace(/\s+/g,''));
       if(!tp){toast('Não entendi. Escreva como 5kg, 500g ou 1L.');break;}
       S.pesos[gp]=tp; save(); render(); verProduto(gp); toast('Agora comparando por '+(tp.base==='L'?'litro':'quilo'));
+      break;
+    case 'pesquisarPrecos': pesquisarPrecos(); break;
+    case 'raio': S.raio=+t.dataset.v; save(); pesquisarPrecos(); break;
+    case 'cands': verCands(t.dataset.i,t.dataset.l); break;
+    case 'escolher': if(S.pesquisa){S.pesquisa.escolha[t.dataset.i+'|'+t.dataset.l]=+t.dataset.k;save();} fechar(); render(); break;
+    case 'termo':
+      var li=S.lista.filter(function(x){return x.id===t.dataset.id;})[0]; if(!li) break;
+      var Gt=grupoDaLista(li), atualT=li.termo||termoAuto(Gt?Gt.nome:li.nome);
+      var novoT=prompt('Como pesquisar este produto nos sites? (ex.: arroz tio joão 5kg)',atualT);
+      if(novoT===null) break; novoT=novoT.trim();
+      if(novoT&&novoT!==atualT){li.termo=novoT;save();pesquisarItem(li.id);} else if(!novoT){delete li.termo;save();pesquisarItem(li.id);}
       break;
     case 'pview': V.pview=t.dataset.v; render(); break;
     case 'rep': V.rep=t.dataset.v; render(); break;
