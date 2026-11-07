@@ -147,7 +147,7 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 .ptable td.r,.ptable th.r{text-align:right}
 .spark{width:100%;height:70px;display:block}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + var(--safe-b));background:var(--card2);border:1px solid var(--line2);border-radius:999px;padding:10px 16px;font-size:13.5px;z-index:60;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(146px + var(--safe-b));background:var(--card2);border:1px solid var(--line2);border-radius:999px;padding:10px 16px;font-size:13.5px;z-index:60;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 .pr.good{color:var(--lime)!important;font-weight:700}
 .pr.bad{color:var(--red)!important;font-weight:700}
 .un{font-size:.78em;color:var(--muted);font-weight:500;margin-left:1px}
@@ -172,6 +172,9 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 .dica-balao::after{content:"";position:absolute;left:calc(var(--seta) - 8px);border:8px solid transparent}
 .dica-balao.baixo::after{top:-16px;border-bottom-color:var(--lime)}
 .dica-balao.cima::after{bottom:-16px;border-top-color:var(--lime)}
+.fixoPrecos{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + var(--safe-b));z-index:19;display:flex;align-items:center;gap:8px;background:var(--lime);color:#15200a;font-weight:700;border-radius:999px;padding:12px 20px;box-shadow:0 10px 28px rgba(0,0,0,.5),0 0 0 4px var(--bg);white-space:nowrap}
+.fixoPrecos svg{width:18px;height:18px}
+@media (min-width:980px){.fixoPrecos{bottom:24px;left:auto;right:24px;transform:none}}
 .mt{margin-top:12px}.mb{margin-bottom:12px}
 .hide{display:none!important}
 @media (min-width:720px){
@@ -619,6 +622,12 @@ function ondeComprar(itens){
 function telaLista(){
   var c=calc(), h=topo('Lista de compras')+bannerExemplo();
   var abertos=S.lista.filter(function(l){return !l.feito;}), feitos=S.lista.filter(function(l){return l.feito;});
+  if(abertos.length){
+    var ult=S.pesquisa?new Date(S.pesquisa.quando):null;
+    h+='<div class="card mb" id="cardPrecos" style="background:linear-gradient(135deg,rgba(200,244,58,.13),rgba(199,125,255,.12)),var(--card);border-color:rgba(200,244,58,.35)"><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><span style="font-size:26px">🔎</span><div><b style="font-size:16px">Comparar preços nos mercados</b><div class="sub">Muffato, Angeloni e Atacadão perto de você: preço de cada item e o total da lista em cada mercado.</div></div></div>'+
+      '<button class="btn pri full" data-act="pesquisarPrecos">'+I.search.replace('<svg','<svg style="width:18px;height:18px"')+' Comparar os '+abertos.length+' '+(abertos.length===1?'item':'itens')+' agora</button>'+
+      (ult?'<button class="btn full mt" data-tab="precos">Ver última comparação ('+ult.toLocaleDateString('pt-BR').slice(0,5)+' '+ult.toTimeString().slice(0,5)+')</button>':'')+'</div>';
+  }
   h+='<button class="btn full mb" data-act="importarCardapio" style="justify-content:flex-start;gap:12px;text-align:left"><span style="font-size:20px">🍽️</span><span style="flex:1"><b>Importar do Cardápio da Semana</b><div class="sub" style="font-weight:500">Traz os ingredientes da semana para esta lista</div></span></button>';
   h+='<div class="card mb"><div style="display:flex;gap:8px"><input id="addLista" placeholder="Adicionar item (ex.: café)" autocomplete="off"><button class="btn pri" data-act="addLivre" style="padding:0 16px;flex:none" aria-label="Adicionar">'+I.plus.replace('<svg','<svg style="width:20px;height:20px"')+'</button></div><div id="addSug"></div></div>';
   if(!S.lista.length){
@@ -633,12 +642,6 @@ function telaLista(){
           '<button class="tx" style="text-align:left" '+(G?'data-act="produto" data-g="'+esc(G.id)+'"':'data-act="toggleLista" data-id="'+esc(l.id)+'"')+'><div class="t1">'+esc(G?nomeG(G):l.nome)+'</div><div class="t2 wrap">'+info+'</div></button>'+
           '<button class="iconbtn" style="width:34px;height:34px;border:0" data-act="tirarLista" data-id="'+esc(l.id)+'" aria-label="Remover">'+I.x.replace('<svg','<svg style="width:16px;height:16px"')+'</button></div>';
       }).join('')+'</div></div>';
-    if(abertos.length){
-      var ult=S.pesquisa?new Date(S.pesquisa.quando):null;
-      h+='<div class="card mb" style="background:linear-gradient(135deg,rgba(200,244,58,.10),rgba(199,125,255,.10)),var(--card)"><b>Quanto custa hoje?</b><p class="sub" style="margin:4px 0 12px">Pesquisa os itens da lista nos sites do Muffato, Angeloni e Atacadão perto de você e mostra o total em cada um.</p>'+
-        '<button class="btn pri full" data-act="pesquisarPrecos">'+I.search.replace('<svg','<svg style="width:18px;height:18px"')+' Pesquisar preços de hoje</button>'+
-        (ult?'<button class="btn full mt" data-tab="precos">Ver última pesquisa ('+ult.toLocaleDateString('pt-BR').slice(0,5)+' '+ult.toTimeString().slice(0,5)+')</button>':'')+'</div>';
-    }
     var gs=abertos.map(grupoDaLista).filter(Boolean);
     if(gs.length){
       var o=ondeComprar(gs);
@@ -651,6 +654,7 @@ function telaLista(){
         '<p class="sub mt" style="margin-bottom:0">A porcentagem mostra se o mercado fica acima ou abaixo da média nos itens da lista que dá para comparar.</p></div>';
     }
   }
+  if(abertos.length) h+='<button class="fixoPrecos" data-act="pesquisarPrecos">'+I.search.replace('<svg','<svg style="width:18px;height:18px"')+' Comparar preços ('+abertos.length+')</button>';
   var sug=sugestoesLista();
   if(sug.length){
     var hora=sug.filter(function(x){return x.r.razao>=0.85;});
@@ -927,10 +931,11 @@ function importarCardapio(){
 }
 
 /* ---------- Novidades da versão ---------- */
-var VERSAO=7;
+var VERSAO=8;
 var NOVIDADES=[
+ {e:'⭐',t:'Comparar preços ficou mais fácil',d:'O botão para comparar os preços da sua lista nos mercados agora fica no topo da aba Lista, e também num botão verde fixo enquanto você rola. Depois de importar do Cardápio, o app já oferece a comparação.',ir:{tab:'lista',sel:'#cardPrecos',dica:'Toque em Comparar para ver o preço em cada mercado',precisa:'lista'}},
  {e:'🛒',t:'Lista de compras',d:'Nova aba Lista: adicione itens, veja o mercado mais barato de cada um e sugestões do que você costuma recomprar. Ao ler a nota, o que você comprou é marcado sozinho.',ir:{tab:'lista',sel:'#addLista',dica:'Digite um produto aqui ou toque nas sugestões abaixo'}},
- {e:'🔎',t:'Preços de hoje',d:'Pesquisa a sua lista nos sites do Muffato, Angeloni e Atacadão perto de você e mostra o total em cada um, para você ir onde economiza mais.',ir:{tab:'lista',sel:'[data-act=pesquisarPrecos]',dica:'Toque aqui com a lista pronta',precisa:'lista'}},
+ {e:'🔎',t:'Preços de hoje',d:'Na aba Lista, toque em Comparar preços: o app pesquisa a sua lista nos sites do Muffato, Angeloni e Atacadão perto de você e mostra o total em cada um, para você ir onde economiza mais.',ir:{tab:'lista',sel:'#cardPrecos [data-act=pesquisarPrecos]',dica:'Toque aqui com a lista pronta',precisa:'lista'}},
  {e:'🍽️',t:'Importar do Cardápio da Semana',d:'Traga os ingredientes do cardápio direto para a lista, sem digitar.',ir:{tab:'lista',sel:'[data-act=importarCardapio]',dica:'Toque aqui para trazer os ingredientes'}},
  {e:'🟢',t:'Preços que subiram e baixaram',d:'Na aba Produtos → Repetidos: verde se baixou, vermelho se subiu, sempre comparando o preço do quilo ou do litro.',ir:{tab:'produtos',pview:'repetidos',sel:'[data-act=rep][data-v=todos]',dica:'Toque em Subiram ou Baixaram para filtrar'}},
  {e:'📦',t:'Embalagens diferentes separadas',d:'Arroz de 1 kg e de 5 kg com o mesmo nome na nota não são mais misturados. Abra o produto e informe o peso da embalagem para comparar pelo quilo.',ir:{tab:'produtos',pview:'todos',sel:'#busca',dica:'Abra um produto para informar o peso da embalagem'}},
@@ -1351,7 +1356,11 @@ document.addEventListener('click',function(e){
     case 'impOk':
       var nAdd=0; (V.imp||[]).forEach(function(x){if(!x.on)return;var al=partesAlvo(x.parts);
         S.lista.push({id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),g:x.G?x.G.id:null,nome:x.G?x.G.nome:x.n,feito:false,qtd:x.qtd,orig:'cardapio',alvoQ:al,termo:x.G?undefined:x.n});nAdd++;});
-      V.imp=null; save(); fechar(); V.tab='lista'; render(); toast(nAdd+' itens do cardápio na lista'); break;
+      V.imp=null; save(); V.tab='lista'; render();
+      abrir(shead('Itens na lista')+'<div class="ok">'+nAdd+(nAdd===1?' item do cardápio foi adicionado':' itens do cardápio foram adicionados')+' à sua lista.</div>'+
+        '<p class="sub" style="margin:12px 2px">Quer ver agora quanto essa lista custa hoje no Muffato, Angeloni e Atacadão perto de você?</p>'+
+        '<div class="stack"><button class="btn pri full" data-act="pesquisarPrecos">'+I.search.replace('<svg','<svg style="width:18px;height:18px"')+' Comparar preços agora</button><button class="btn full" data-act="fechar">Depois</button></div>');
+      break;
     case 'novidades': verNovidades(); break;
     case 'mostrarOnde': mostrarOnde(+t.dataset.i); break;
     case 'raio': S.raio=+t.dataset.v; save(); pesquisarPrecos(); break;
