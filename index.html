@@ -712,7 +712,10 @@ function pontua(alvo,c){
   var a=toks(alvo), b=toks(c.nome+' '+(c.marca||'')); if(!a.length||!b.length) return 0;
   var bate=function(w){return b.some(function(x){return x===w||(w.length>=3&&x.indexOf(w)===0)||(x.length>=4&&w.indexOf(x)===0);});};
   if(!bate(a[0])) return 0; // o tipo do produto (arroz, café...) precisa bater
-  var hit=a.filter(bate).length, sc=hit/a.length;
+  // e o nome no site precisa começar por ele: "Banana Nanica" sim, "Torta de Banana" não
+  var p0=norm(c.nome).split(' ')[0]||'', w0=a[0];
+  if(!(p0===w0||(w0.length>=3&&p0.indexOf(w0)===0)||(p0.length>=4&&w0.indexOf(p0)===0))) return 0;
+  var hit=a.filter(bate).length, sc=0.4+0.6*hit/a.length; // acertar o tipo já vale 0,4; o resto das palavras completa
   var ta=tamanho(alvo), tc=tamanho(c.nome);
   if(ta&&tc){sc+=(ta.base===tc.base&&Math.abs(tc.q/ta.q-1)<0.03)?0.3:-0.35;}
   if(!c.disp) sc-=0.15;
