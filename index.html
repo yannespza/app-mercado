@@ -189,7 +189,8 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 .litem.feito .t1{text-decoration:line-through;color:var(--faint)}
 .litem.feito .t2{opacity:.5}
 .litem.off .t1{color:var(--muted)}
-.dica-on{position:relative;z-index:31;box-shadow:0 0 0 3px var(--lime),0 0 0 9px rgba(200,244,58,.25)!important;border-radius:14px;animation:pulsa 1.2s ease-in-out infinite}
+.dica-rel{position:relative}
+.dica-on{z-index:31;box-shadow:0 0 0 3px var(--lime),0 0 0 9px rgba(200,244,58,.25)!important;border-radius:14px;animation:pulsa 1.2s ease-in-out infinite}
 @keyframes pulsa{50%{box-shadow:0 0 0 3px var(--lime),0 0 0 15px rgba(200,244,58,.08)!important}}
 .dica-balao{position:fixed;z-index:70;max-width:280px;background:var(--lime);color:#15200a;font-weight:700;font-size:14px;padding:11px 14px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 .dica-balao::after{content:"";position:absolute;left:calc(var(--seta) - 8px);border:8px solid transparent}
@@ -966,7 +967,7 @@ function mostrarOnde(i){
   },120);
 }
 function dica(el,txt){
-  tirarDica(); el.classList.add('dica-on');
+  tirarDica(); el.classList.add('dica-on');if(getComputedStyle(el).position==="static")el.classList.add("dica-rel");
   var r=el.getBoundingClientRect(), b=document.createElement('div'); b.className='dica-balao'; b.id='dicaBalao'; b.textContent=txt||'';
   document.body.appendChild(b);
   var w=b.offsetWidth, x=Math.max(12,Math.min(window.innerWidth-w-12,r.left+r.width/2-w/2)), embaixo=r.bottom+b.offsetHeight+16<window.innerHeight-90;
@@ -974,7 +975,7 @@ function dica(el,txt){
   b.style.setProperty('--seta',Math.max(16,Math.min(w-16,r.left+r.width/2-x))+'px');
   V.dicaEl=el; clearTimeout(V.dicaT); V.dicaT=setTimeout(tirarDica,7000);
 }
-function tirarDica(){var b=document.getElementById('dicaBalao');if(b)b.remove();if(V.dicaEl)V.dicaEl.classList.remove('dica-on');V.dicaEl=null;}
+function tirarDica(){var b=document.getElementById('dicaBalao');if(b)b.remove();if(V.dicaEl)V.dicaEl.classList.remove("dica-rel",'dica-on');V.dicaEl=null;}
 
 /* ---------- Produtos ---------- */
 function telaProdutos(){
