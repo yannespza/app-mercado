@@ -727,9 +727,13 @@ function escolhido(P,it,lojaId){
   var k=P.escolha[it.id+'|'+lojaId];
   if(k===-1) return null;
   if(k!=null&&cs[k]) return {c:cs[k],k:k,manual:true};
-  var best=null,bk=-1,bs=0.55;
-  cs.forEach(function(c,i){var s=pontua(it.alvo+' '+it.q,c);if(s>bs){bs=s;best=c;bk=i;}});
-  return best?{c:best,k:bk,score:bs}:null;
+  // nota de cada opção; entre as que empatam no topo (mesmo produto/tamanho, marcas diferentes), fica a mais barata
+  var alvo=(P.termos&&P.termos[it.id]&&it.l&&it.l.termo)?it.q:it.alvo+' '+it.q;
+  var sc=cs.map(function(c){return pontua(alvo,c);}), bs=Math.max.apply(null,sc.concat([0]));
+  if(bs<0.55) return null;
+  var bk=-1,bv=null;
+  cs.forEach(function(c,i){if(sc[i]<bs-0.05)return;var v=refCand(c).v+(c.disp?0:1e6);if(bv==null||v<bv){bv=v;bk=i;}});
+  return {c:cs[bk],k:bk,score:sc[bk]};
 }
 function pedirPrecos(lojaId,itens){
   return fetch('api/precos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loja:lojaId,cep:S.cep||'',itens:itens})})
@@ -839,7 +843,7 @@ function telaPrecos(){
           '<div class="vv"><div class="pr '+(barato?'good':caro?'bad':'')+'">'+$$(c.preco)+(c.un==='kg'?'<span class="un">/kg</span>':'')+'</div>'+(r.base!=='un'&&c.un!=='kg'?'<div class="sub">'+$$(r.v)+uRef(r.base)+'</div>':'')+(c.de?'<div class="sub" style="text-decoration:line-through">'+$$(c.de)+'</div>':'')+'</div></button>';
       }).join('')+'</div>')+'</div>';
   });
-  h+='<p class="sub" style="text-align:center;margin:14px 8px 0">Preços dos sites dos mercados no momento da pesquisa. Na loja física o preço pode ser diferente. Condor e Carrefour não liberam consulta de preços pelo site.</p>';
+  h+='<p class="sub" style="text-align:center;margin:14px 8px 0">Quando a busca não tem marca, o app pega a opção mais barata que corresponde em cada loja. Toque numa loja para escolher outro produto, ou em “mudar” para incluir a marca.</p><p class="sub" style="text-align:center;margin:8px 8px 0">Preços dos sites dos mercados no momento da pesquisa. Na loja física o preço pode ser diferente. Condor e Carrefour não liberam consulta de preços pelo site.</p>';
   return h;
 }
 function verCands(iid,lid){
