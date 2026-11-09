@@ -170,6 +170,11 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 .ptable td.r,.ptable th.r{text-align:right}
 .spark{width:100%;height:70px;display:block}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
+.pchip{border:1px solid var(--line2);background:transparent;color:var(--muted);border-radius:999px;padding:7px 12px;font:600 13px inherit}
+.pchip.on{border-color:rgba(240,196,106,.6);background:rgba(240,196,106,.12);color:#f0c46a}
+.hero-s{text-align:center;padding:6px 4px 2px}.hero-s .lg{width:64px;height:64px;border-radius:20px;background:var(--lime);color:#15200a;display:grid;place-items:center;margin:0 auto}.hero-s .lg svg{width:34px;height:34px}
+.hero-s h2{font-size:26px;margin:14px 0 6px}.hero-s p{color:var(--muted);margin:0 auto;max-width:420px;line-height:1.5}
+.feat{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}.feat:first-of-type{border-top:0}.feat .e{font-size:22px;line-height:1.2;width:28px;text-align:center;flex:none}.feat p{margin:4px 0 0;color:var(--muted);font-size:13.5px;line-height:1.5}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + var(--safe-b));background:var(--card2);border:1px solid var(--line2);border-radius:999px;padding:10px 16px;font-size:13.5px;z-index:60;display:none;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 .pr.good{color:var(--lime)!important;font-weight:700}
 .pr.bad{color:var(--red)!important;font-weight:700}
@@ -501,7 +506,8 @@ function renderNav(){
   var abertos=S.lista.filter(function(l){return !l.feito;}).length;
   document.getElementById('side').innerHTML='<div class="brand"><span class="logo">'+I.cart+'</span>Meu Mercado</div>'+
     SIDE.map(function(n){return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]?'on':'')+'">'+n[2]+'<span style="flex:1">'+n[1]+'</span>'+(n[0]==='lista'&&abertos?'<span class="badge b-pur">'+abertos+'</span>':'')+'</button>';}).join('')+
-    '<div class="sep"></div><button data-act="scan">'+I.scan+'<span>Ler nota fiscal</span></button><button data-act="ajustes">'+I.gear+'<span>Ajustes e backup</span></button><button data-act="novidades"><span style="width:20px;text-align:center">✨</span><span>Novidades</span></button>';
+    '<div class="sep"></div><button data-act="scan">'+I.scan+'<span>Ler nota fiscal</span></button><button data-act="ajustes">'+I.gear+'<span>Ajustes e backup</span></button><button data-act="novidades"><span style="width:20px;text-align:center">✨</span><span>Novidades</span></button>'+
+    '<div class="sep"></div><button data-tab="sobre" class="'+(V.tab==='sobre'?'on':'')+'"><span style="width:20px;text-align:center">ℹ️</span><span>Sobre o app</span></button><button data-act="compartilhar"><span style="width:20px;text-align:center">📤</span><span>Compartilhar o app</span></button>';
   document.getElementById('fabScan').innerHTML=I.scan;
   document.getElementById('fabScan').style.display=V.tab==='precos'?'none':'';
 }
@@ -526,6 +532,7 @@ function render(){
   else if(V.tab==='precos') h=telaPrecos();
   else if(V.tab==='produtos') h=telaProdutos();
   else if(V.tab==='mercados') h=telaMercados();
+  else if(V.tab==='sobre') h=telaSobre();
   document.getElementById('main').innerHTML=h;
 }
 
@@ -685,8 +692,13 @@ var LOJAS=[
  {id:'atacadao',rede:'Atacadão',nome:'Atacadão',obs:'preço de Curitiba',pts:[[-25.39871,-49.21438],[-25.45080,-49.24325],[-25.46412,-49.30142],[-25.38947,-49.23657],[-25.51345,-49.25759],[-25.41529,-49.35206]]},
  {id:'festval',rede:'Festval',nome:'Festval',obs:'preço da loja online de Curitiba',pts:[[-25.41403,-49.25985],[-25.40721,-49.25132],[-25.42194,-49.24803],[-25.41112,-49.27144],[-25.43304,-49.27718],[-25.43875,-49.26568],[-25.42759,-49.28453],[-25.44099,-49.28244],[-25.45061,-49.28768],[-25.47033,-49.28454]]}
 ];
-var PREFERIDOS={'Muffato':1,'Festval':1,'Jacomar':1,'Condor':1};
-function preferida(L){return !!PREFERIDOS[L.rede];}
+/* mercados preferidos: cada pessoa marca os seus (quem já usava o app ficou com os que eram fixos) */
+var PREF_ANTIGOS={'Muffato':1,'Festval':1,'Jacomar':1,'Condor':1};
+if(!S.pref&&(S.notas.length||S.lista.length||S.pesquisa)){S.pref=Object.assign({},PREF_ANTIGOS);}
+function prefs(){return S.pref||{};}
+function temPref(){return Object.keys(prefs()).length>0;}
+function preferida(L){return !!prefs()[L.rede];}
+function redes(){var o=[];LOJAS.forEach(function(L){if(o.indexOf(L.rede)<0)o.push(L.rede);});return o;}
 function lojaInfo(id){for(var i=0;i<LOJAS.length;i++)if(LOJAS[i].id===id)return LOJAS[i];return {id:id,nome:id,pts:[]};}
 function distKm(a,b){var R=6371,r=Math.PI/180,dLa=(b[0]-a[0])*r,dLo=(b[1]-a[1])*r,x=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLo/2)*Math.sin(dLo/2);return 2*R*Math.asin(Math.sqrt(x));}
 function distLoja(L,pos){if(!pos)return null;var m=null;L.pts.forEach(function(p){var d=distKm(pos,p);if(m==null||d<m)m=d;});return m;}
@@ -764,7 +776,7 @@ function localizacao(){
 }
 function lojasPerto(pos){
   var raio=S.raio||10;
-  var ls=LOJAS.filter(function(L){return !S.soPref||preferida(L);}).map(function(L){return {L:L,d:distLoja(L,pos)};});
+  var ls=LOJAS.filter(function(L){return !S.soPref||!temPref()||preferida(L);}).map(function(L){return {L:L,d:distLoja(L,pos)};});
   if(pos){ls.sort(function(a,b){return a.d-b.d;});var dentro=ls.filter(function(x){return raio>=99||x.d<=raio;});ls=dentro.length>=2?dentro:ls.slice(0,3);}
   return ls;
 }
@@ -833,7 +845,8 @@ function telaPrecos(){
   h+='<div class="card mb"><div class="chead" style="margin-bottom:8px"><h2 style="font-size:16px">'+(P.pos?'Lojas perto de você':'Todas as lojas')+'</h2><span class="sub">'+dt.toLocaleDateString('pt-BR')+' '+dt.toTimeString().slice(0,5)+'</span></div>'+
     (P.pos?'':'<p class="sub" style="margin:0 0 10px">'+(P.semLocal==='negada'?'A localização foi negada. Libere a localização para o app nas configurações do navegador para filtrar por distância.':'Não consegui pegar sua localização, então mostro todas as lojas.')+'</p>')+
     '<div class="seg">'+[[5,'5 km'],[10,'10 km'],[20,'20 km'],[99,'Todas']].map(function(r){return '<button data-act="raio" data-v="'+r[0]+'" class="'+((S.raio||10)===r[0]?'on':'')+'">'+r[1]+'</button>';}).join('')+'</div>'+
-    '<div class="seg mt">'+[[0,'Todos os mercados'],[1,'★ Só preferidos']].map(function(r){return '<button data-act="soPref" data-v="'+r[0]+'" class="'+((S.soPref?1:0)===r[0]?'on':'')+'">'+r[1]+'</button>';}).join('')+'</div></div>';
+    '<div class="seg mt">'+[[0,'Todos os mercados'],[1,'★ Só preferidos']].map(function(r){return '<button data-act="soPref" data-v="'+r[0]+'" class="'+((S.soPref?1:0)===r[0]?'on':'')+'">'+r[1]+'</button>';}).join('')+'</div>'+
+    '<div class="sub" style="margin:12px 0 8px">Seus preferidos (toque para marcar):</div><div class="chips">'+redes().map(function(r){var on=!!prefs()[r];return '<button class="pchip'+(on?' on':'')+'" data-act="prefTg" data-r="'+esc(r)+'">'+(on?'★ ':'☆ ')+esc(r)+'</button>';}).join('')+'</div></div>';
   var R=resumoPesquisa(P,its);
   if(!R.tab.length) return h+'<div class="err">Não consegui consultar os sites agora. Tente de novo em alguns minutos.</div>';
   var top=R.tab[0];
@@ -894,6 +907,38 @@ function verCands(iid,lid){
   abrir(shead(esc(lojaInfo(lid).nome))+'<p class="sub" style="margin:-6px 0 10px">Qual destes é o produto da sua lista (<b>'+esc(it.nome)+'</b>)?</p><div class="list">'+
     cs.map(function(c,k){var r=refCand(c);return '<button class="li" data-act="escolher" data-i="'+esc(iid)+'" data-l="'+esc(lid)+'" data-k="'+k+'"><div class="tx"><div class="t1" style="font-weight:'+(e&&e.k===k?'700':'500')+'">'+(e&&e.k===k?'✓ ':'')+esc(c.nome)+'</div><div class="t2">'+(c.disp?'disponível':'sem estoque online')+(r.base!=='un'?' · '+$$(r.v)+uRef(r.base):'')+'</div></div><div class="vv">'+$$(c.preco)+'</div></button>';}).join('')+'</div>'+
     '<div class="stack mt"><button class="btn full" data-act="escolher" data-i="'+esc(iid)+'" data-l="'+esc(lid)+'" data-k="-1">Nenhum destes</button></div>');
+}
+
+/* ---------- Sobre o app e compartilhar ---------- */
+var FEATS=[
+ ['📷','Lê a nota fiscal pelo QR Code','Aponte a câmera para o QR Code da nota (NFC-e). Mercado, produtos, preços e total entram sozinhos, no mês certo. Sem digitar nada.'],
+ ['📊','Quanto você gasta por mês','No Início: total do mês, comparação com o mês anterior, meta de gasto e para onde foi o dinheiro, por mercado ou por categoria.'],
+ ['📈','Preço subindo ou baixando','Em Produtos, o que você compra sempre aparece em verde quando baixou e vermelho quando subiu, comparando pelo preço do quilo ou do litro, não pela embalagem.'],
+ ['🏪','Qual mercado sai mais barato','Em Mercados, compara os mercados onde você já comprou, no mesmo mês, para ver onde vale mais a pena no geral.'],
+ ['📝','Lista de compras','Monte a lista da próxima compra. O app lembra onde cada item esteve mais barato da última vez.'],
+ ['🔎','Preço de hoje nos sites dos mercados','Com a lista pronta, toque em Comparar preços: o app pesquisa nos sites dos mercados perto de você, mostra o total da compra em cada um e, tocando no mercado, item por item. Hoje funciona com mercados de Curitiba e região.'],
+ ['💾','Backup fácil','Em Ajustes e backup, mande uma cópia dos seus dados para o Drive, iCloud ou WhatsApp e restaure em outro celular.']
+];
+function telaSobre(){
+  var podeInstalar=typeof window.mostrarAjudaInstalacao==='function', instalado=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+  var h=topo('Sobre o app');
+  h+='<div class="card mb"><div class="hero-s"><div class="lg">'+I.cart+'</div><h2>Meu Mercado</h2><p>Controle quanto você gasta no mercado e descubra onde comprar mais barato, só lendo as notas fiscais.</p></div>'+
+    '<div class="stack mt"><button class="btn pri full" data-tab="'+(S.notas.length?'inicio':'inicio')+'">Começar</button>'+(podeInstalar&&!instalado?'<button class="btn full" data-act="instalar">📲 Instalar no celular</button>':'')+'</div></div>';
+  h+='<div class="card mb"><div class="chead"><h2>O que ele faz</h2></div>'+FEATS.map(function(f){return '<div class="feat"><span class="e">'+f[0]+'</span><div><b>'+esc(f[1])+'</b><p>'+esc(f[2])+'</p></div></div>';}).join('')+'</div>';
+  h+='<div class="card mb" style="border-color:rgba(199,125,255,.35);background:linear-gradient(180deg,var(--purpleBg),transparent),var(--card)"><b style="font-size:16px">🔗 Funciona junto com o Cardápio da Semana</b>'+
+    '<p class="sub" style="margin:8px 0 12px;line-height:1.5">Se você também usa o <b>Cardápio da Semana</b> (app que monta o cardápio e a lista de compras), lá em Compras toque em <b>Enviar para o Meu Mercado</b>. Os ingredientes chegam aqui prontos, com o nome da receita de cada um, e você já compara os preços. Não precisa de conta nem de configurar nada. Cada app também funciona sozinho.</p>'+
+    '<a class="btn full" href="'+CARDAPIO_URL.replace(/#.*$/,'')+'#sobre" target="_blank" rel="noopener" style="text-decoration:none">Conhecer o Cardápio da Semana →</a></div>';
+  h+='<div class="card mb"><b>🔒 Seus dados</b><p class="sub" style="margin:6px 0 0;line-height:1.5">Sem cadastro e sem senha. Tudo fica salvo só neste celular. Cada pessoa que abre o link tem o próprio app, começando do zero.</p></div>';
+  h+='<div class="card mb"><b>📲 Instalar</b><p class="sub" style="margin:6px 0 0;line-height:1.5">'+(instalado?'Você já está usando o app instalado. ':'')+'No iPhone: abra o link no Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”. No Android: abra no Chrome e toque em “Instalar app” (ou ⋮ › Adicionar à tela inicial).</p></div>';
+  h+='<button class="btn pri full" data-act="compartilhar" style="margin-bottom:24px">📤 Compartilhar com alguém</button>';
+  return h;
+}
+function compartilhar(){
+  var url=location.origin+location.pathname+'#sobre', txt='Meu Mercado: lê a nota fiscal do mercado pelo QR Code, mostra quanto você gasta por mês e onde comprar mais barato. Grátis, sem cadastro, dá para instalar no celular.';
+  if(navigator.share){navigator.share({title:'Meu Mercado',text:txt,url:url}).catch(function(){});return;}
+  var t=txt+'\n'+url;
+  function fb(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();toast(ok?'Link copiado. Cole no WhatsApp ou onde quiser.':'O link é: '+url);}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast('Link copiado. Cole no WhatsApp ou onde quiser.');},fb);else fb();
 }
 
 /* ---------- Importar do Cardápio da Semana ----------
@@ -960,8 +1005,10 @@ function importarCardapio(){
 }
 
 /* ---------- Novidades da versão ---------- */
-var VERSAO=10;
+var VERSAO=11;
 var NOVIDADES=[
+ {e:'📤',t:'Compartilhe o app',d:'No menu, Compartilhar o app manda o link para quem você quiser. A pessoa recebe o app limpo, só com os dados dela, e a tela Sobre o app explicando tudo.',ir:{tab:'inicio',sel:'.menuBtn',dica:'Abra o menu: Sobre o app e Compartilhar ficam no final'}},
+ {e:'★',t:'Escolha seus mercados preferidos',d:'Em Comparar preços, marque com ★ as redes que você prefere. O filtro Só preferidos usa a sua escolha.',ir:{tab:'precos',sel:'.pchip',dica:'Toque para marcar ou desmarcar'}},
  {e:'🏪',t:'Ver os itens de cada mercado',d:'Em Comparar preços, toque num mercado do "Onde comprar" para ver item por item: o produto, o preço, se é o mais barato e de qual receita do Cardápio ele veio.',ir:{tab:'precos',sel:'[data-act=verLoja]',dica:'Toque num mercado para ver os itens'}},
  {e:'☰',t:'App mais limpo, com menu',d:'As telas agora ficam no menu do canto de cima. O botão verde redondo lê a nota fiscal de qualquer tela.',ir:{tab:'inicio',sel:'.menuBtn',dica:'Toque aqui para ver todas as telas'}},
  {e:'⚖️',t:'Comparação mais justa',d:'Mês a mês, cada produto é comparado só com a compra anterior no mesmo mercado. Entre mercados, só com preços do mesmo mês, para a inflação não distorcer.',ir:{tab:'mercados',sel:'.rank',dica:'Ranking com preços do mesmo mês'}},
@@ -1396,7 +1443,10 @@ document.addEventListener('click',function(e){
     case 'novidades': verNovidades(); break;
     case 'mostrarOnde': mostrarOnde(+t.dataset.i); break;
     case 'raio': S.raio=+t.dataset.v; save(); pesquisarPrecos(); break;
-    case 'soPref': S.soPref=!!+t.dataset.v; save(); pesquisarPrecos(); break;
+    case 'soPref': if(+t.dataset.v&&!temPref()){toast('Marque primeiro seus mercados preferidos ★');break;} S.soPref=!!+t.dataset.v; save(); pesquisarPrecos(); break;
+    case 'prefTg': S.pref=S.pref||{}; if(S.pref[t.dataset.r])delete S.pref[t.dataset.r]; else S.pref[t.dataset.r]=1; save(); render(); break;
+    case 'compartilhar': compartilhar(); break;
+    case 'instalar': if(window.mostrarAjudaInstalacao)window.mostrarAjudaInstalacao(); break;
     case 'cands': verCands(t.dataset.i,t.dataset.l); break;
     case 'verLoja': verLoja(t.dataset.l); break;
     case 'escolher': if(S.pesquisa){S.pesquisa.escolha[t.dataset.i+'|'+t.dataset.l]=+t.dataset.k;save();} var vl=V.lojaAberta; fechar(); render(); if(vl)verLoja(vl); break;
@@ -1435,13 +1485,15 @@ document.addEventListener('keydown',function(e){
 });
 
 if(navigator.storage&&navigator.storage.persist){try{navigator.storage.persist().catch(function(){});}catch(e){}}
+var novato=true;try{novato=localStorage.getItem(KEY)===null;}catch(e){}
+if(location.hash==='#sobre'||(novato&&!/importar=/.test(location.hash)&&!location.search)){V.tab='sobre';if(location.hash==='#sobre'){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}}
 render();
 (function(){
   if(lerImportLink()) { if(!S.versaoVista){S.versaoVista=VERSAO;save();} return; }
   if(!S.notas.length&&!S.versaoVista){S.versaoVista=VERSAO;save();return;} // quem acabou de chegar não precisa de novidades
   if((S.versaoVista||0)<VERSAO) setTimeout(verNovidades,400);
 })();
-window.addEventListener('hashchange',function(){if(/importar=/.test(location.hash))lerImportLink();});
+window.addEventListener('hashchange',function(){if(/importar=/.test(location.hash))lerImportLink();else if(location.hash==='#sobre'){V.tab='sobre';render();window.scrollTo(0,0);}});
 if('serviceWorker' in navigator && location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(function(){});}
 // abrir direto pela leitura de QR feita pela câmera do celular: .../?nota=<link>
 var qp=new URLSearchParams(location.search).get('nota'); if(qp){telaScan();pararCamera();buscarNota(qp);history.replaceState(null,'',location.pathname);}
