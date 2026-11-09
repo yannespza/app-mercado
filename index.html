@@ -911,16 +911,17 @@ function telaImportar(d){
   var naLista={}; S.lista.forEach(function(l){if(l.feito)return;var G=grupoDaLista(l);if(G)naLista[G.id]=1;naLista['n:'+norm(l.nome)]=1;});
   V.imp=(d.itens||[]).slice(0,80).map(function(x,i){
     var G=grupoParaIngrediente(x.n), ja=(G&&naLista[G.id])||naLista['n:'+norm(x.n)];
-    return {i:i,n:String(x.n||'').slice(0,80),qtd:String(x.qtd||'').slice(0,30),parts:x.parts||[],G:G,ja:!!ja,on:!ja&&!!(x.parts&&x.parts.length)};
+    return {i:i,n:String(x.n||'').slice(0,80),qtd:String(x.qtd||'').slice(0,30),parts:x.parts||[],rec:Array.isArray(x.r)?x.r.slice(0,3).map(function(t){return String(t).slice(0,50);}):[],G:G,ja:!!ja,on:!ja&&!!(x.parts&&x.parts.length)};
   }).filter(function(x){return x.n;});
+  V.impRec=d.receita?String(d.receita).slice(0,60):'';
   desenharImport(d.semana);
 }
 function desenharImport(semana){
   var its=V.imp||[], n=its.filter(function(x){return x.on;}).length;
   abrir(shead('Importar do Cardápio')+
-    (its.length?'<p class="sub" style="margin:-6px 0 10px">'+(semana?'Cardápio de '+esc(semana)+'. ':'')+'Desmarque o que você já tem em casa. Temperos "a gosto" e o que já está na lista vêm desmarcados.</p>'+
+    (its.length?'<p class="sub" style="margin:-6px 0 10px">'+(V.impRec?'Ingredientes de <b>'+esc(V.impRec)+'</b>. ':semana?'Cardápio de '+esc(semana)+'. ':'')+'Desmarque o que você já tem em casa. Temperos "a gosto" e o que já está na lista vêm desmarcados.</p>'+
     '<div class="list">'+its.map(function(x){
-      return '<button class="li litem'+(x.on?'':' off')+'" data-act="impTg" data-i="'+x.i+'" style="text-align:left"><span class="chk" style="'+(x.on?'background:var(--lime);border-color:var(--lime)':'')+'">'+(x.on?I.check:'')+'</span><div class="tx"><div class="t1">'+esc(x.n)+'</div><div class="t2 wrap">'+(x.qtd?esc(x.qtd):'a gosto')+(x.ja?' · já está na lista':'')+(x.G?' · você costuma comprar <b>'+esc(nomeG(x.G))+'</b>':'')+'</div></div></button>';
+      return '<button class="li litem'+(x.on?'':' off')+'" data-act="impTg" data-i="'+x.i+'" style="text-align:left"><span class="chk" style="'+(x.on?'background:var(--lime);border-color:var(--lime)':'')+'">'+(x.on?I.check:'')+'</span><div class="tx"><div class="t1">'+esc(x.n)+'</div><div class="t2 wrap">'+(x.qtd?esc(x.qtd):'a gosto')+(x.rec&&x.rec.length&&!V.impRec?' · 🍽️ '+esc(x.rec.join(', ')):'')+(x.ja?' · já está na lista':'')+(x.G?' · você costuma comprar <b>'+esc(nomeG(x.G))+'</b>':'')+'</div></div></button>';
     }).join('')+'</div>'+
     '<div class="stack mt" style="position:sticky;bottom:0;background:var(--bg2);padding-top:8px"><button class="btn pri full" data-act="impOk"'+(n?'':' disabled style="opacity:.5"')+'>Adicionar '+n+' '+(n===1?'item':'itens')+' à lista</button></div>'
     :'<div class="empty"><b>Nada para importar</b>Cole a lista copiada no Cardápio da Semana.</div>'));
