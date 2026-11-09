@@ -50,6 +50,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--purple)}
 .link{color:var(--purple)!important;font-weight:600}
 .seg.mini{padding:3px}.seg.mini button{padding:6px 10px;font-size:12px}
 .fchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.abas{display:flex;gap:8px;overflow-x:auto;margin:0 -16px 12px;padding:0 16px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}.abas::-webkit-scrollbar{display:none}.abas .fchip{flex:none;white-space:nowrap}
 .fchip{padding:8px 13px;border-radius:999px;border:1px solid var(--line2);font-size:13px;font-weight:600;color:var(--muted);background:var(--card)}
 .fchip b{margin-left:3px;color:var(--text)}
 .fchip.on{color:var(--text);border-color:var(--purple);background:var(--purpleBg)}
@@ -646,11 +647,19 @@ function telaLista(){
   h+='<div class="addrow"><input id="addLista" placeholder="Adicionar item (ex.: café)" autocomplete="off"><button class="btn pri" data-act="addLivre" aria-label="Adicionar">'+I.plus.replace('<svg','<svg style="width:20px;height:20px"')+'</button>'+
     '<button class="btn" data-act="importarCardapio" aria-label="Importar do Cardápio da Semana" title="Importar do Cardápio da Semana" style="font-size:19px;padding:0 13px">🍽️</button></div><div id="addSug" class="mb"></div>';
   if(S.pesquisa&&abertos.length){var ult=new Date(S.pesquisa.quando);h+='<button class="linkline" data-tab="precos"><span>Última comparação de preços · '+ult.toLocaleDateString('pt-BR').slice(0,5)+' '+ult.toTimeString().slice(0,5)+'</span><span>→</span></button>';}
+  var recsL=[]; S.lista.forEach(function(l){(l.rec||[]).forEach(function(r){if(recsL.indexOf(r)<0)recsL.push(r);});});
+  var semRec=S.lista.some(function(l){return !(l.rec&&l.rec.length);});
+  var abasL=recsL.length?[['todos','Todos']].concat(recsL.map(function(r){return ['r:'+r,r];})).concat(semRec?[['avulsos','Avulsos']]:[]):[];
+  if(!abasL.some(function(a){return a[0]===V.listaAba;})) V.listaAba='todos';
+  function naAba(l,a){return a==='todos'||(a==='avulsos'?!(l.rec&&l.rec.length):!!(l.rec&&l.rec.indexOf(a.slice(2))>=0));}
+  var abertosV=abertos.filter(function(l){return naAba(l,V.listaAba);}), feitosV=feitos.filter(function(l){return naAba(l,V.listaAba);});
   if(!S.lista.length){
     h+='<div class="card mb"><div class="empty"><b>Sua lista está vazia</b>Digite um produto acima, toque em 🍽️ para trazer os ingredientes do Cardápio da Semana, ou use as sugestões abaixo.</div></div>';
   }else{
-    h+='<div class="card mb"><div class="chead"><h2>'+abertos.length+' '+(abertos.length===1?'item':'itens')+'</h2>'+(feitos.length?'<button class="sub link" data-act="limparFeitos">Limpar marcados ('+feitos.length+')</button>':'')+'</div><div class="list">'+
-      abertos.concat(feitos).map(function(l){
+    if(abasL.length) h+='<div class="abas" role="tablist">'+abasL.map(function(a){var n=abertos.filter(function(l){return naAba(l,a[0]);}).length;return '<button class="fchip'+(V.listaAba===a[0]?' on':'')+'" role="tab" data-act="abaLista" data-v="'+esc(a[0])+'">'+(a[0]==='todos'?'':a[0]==='avulsos'?'':'🍽️ ')+esc(a[1])+' <b>'+n+'</b></button>';}).join('')+'</div>';
+    h+='<div class="card mb"><div class="chead"><h2>'+abertosV.length+' '+(abertosV.length===1?'item':'itens')+'</h2><span style="display:flex;gap:14px">'+(feitos.length?'<button class="sub link" data-act="limparFeitos">Limpar marcados ('+feitos.length+')</button>':'')+'<button class="sub link" data-act="limparLista">Limpar lista</button></span></div><div class="list">'+
+      (abertosV.length||feitosV.length?'':'<div class="empty" style="padding:14px 0">Nada nesta aba.</div>')+
+      abertosV.concat(feitosV).map(function(l){
         var G=grupoDaLista(l), u=precoMaisBarato(G);
         var info=[l.qtd?esc(l.qtd):'', recTxt(l), u?'mais barato no '+esc(nomeMercado(G.maisBarato))+' · '+$$ref(u):''].filter(Boolean).join(' · ');
         return '<div class="li litem'+(l.feito?' feito':'')+'"><button class="chk" data-act="toggleLista" data-id="'+esc(l.id)+'" aria-label="Marcar">'+(l.feito?I.check:'')+'</button>'+
@@ -1005,8 +1014,9 @@ function importarCardapio(){
 }
 
 /* ---------- Novidades da versão ---------- */
-var VERSAO=11;
+var VERSAO=12;
 var NOVIDADES=[
+ {e:'🗂️',t:'Abas por receita e limpar lista',d:'Na Lista, os ingredientes importados ficam em abas, uma por receita. Toque em Limpar lista para esvaziar tudo, só os marcados ou só uma receita.',ir:{tab:'lista',sel:'[data-act=limparLista]',dica:'Toque aqui para limpar a lista',precisa:'lista'}},
  {e:'📤',t:'Compartilhe o app',d:'No menu, Compartilhar o app manda o link para quem você quiser. A pessoa recebe o app limpo, só com os dados dela, e a tela Sobre o app explicando tudo.',ir:{tab:'inicio',sel:'.menuBtn',dica:'Abra o menu: Sobre o app e Compartilhar ficam no final'}},
  {e:'★',t:'Escolha seus mercados preferidos',d:'Em Comparar preços, marque com ★ as redes que você prefere. O filtro Só preferidos usa a sua escolha.',ir:{tab:'precos',sel:'.pchip',dica:'Toque para marcar ou desmarcar'}},
  {e:'🏪',t:'Ver os itens de cada mercado',d:'Em Comparar preços, toque num mercado do "Onde comprar" para ver item por item: o produto, o preço, se é o mais barato e de qual receita do Cardápio ele veio.',ir:{tab:'precos',sel:'[data-act=verLoja]',dica:'Toque num mercado para ver os itens'}},
@@ -1413,7 +1423,23 @@ document.addEventListener('click',function(e){
     case 'addHora': sugestoesLista().filter(function(x){return x.r.razao>=0.85;}).forEach(function(x){S.lista.push({id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),g:x.G.id,nome:x.G.nome,feito:false});}); save(); render(); break;
     case 'toggleLista': S.lista.forEach(function(l){if(l.id===t.dataset.id)l.feito=!l.feito;}); save(); render(); break;
     case 'tirarLista': S.lista=S.lista.filter(function(l){return l.id!==t.dataset.id;}); save(); render(); break;
-    case 'limparFeitos': S.lista=S.lista.filter(function(l){return !l.feito;}); save(); render(); break;
+    case 'limparFeitos': S.lista=S.lista.filter(function(l){return !l.feito;}); save(); fechar(); render(); break;
+    case 'abaLista': V.listaAba=t.dataset.v; render(); break;
+    case 'limparLista':
+      var nTodos=S.lista.length, nFeitos=S.lista.filter(function(l){return l.feito;}).length;
+      if(!nTodos){toast('A lista já está vazia');break;}
+      var ab=V.listaAba||'todos', recAb=ab.indexOf('r:')===0?ab.slice(2):'', nAb=recAb?S.lista.filter(function(l){return l.rec&&l.rec.indexOf(recAb)>=0;}).length:0;
+      abrir(shead('Limpar lista')+'<p class="sub" style="margin:-6px 0 12px">O que você quer tirar da lista?</p><div class="stack">'+
+        (recAb?'<button class="btn full" data-act="limparAba">Só a receita '+esc(recAb)+' ('+nAb+')</button>':'')+
+        (nFeitos?'<button class="btn full" data-act="limparFeitos">Só os marcados ('+nFeitos+')</button>':'')+
+        '<button class="btn full" style="color:var(--red)" data-act="limparTudo">Limpar tudo ('+nTodos+(nTodos===1?' item':' itens')+')</button>'+
+        '<button class="btn full" data-act="fechar">Cancelar</button></div>'); break;
+    case 'limparTudo': S.lista=[]; V.listaAba='todos'; save(); fechar(); render(); toast('Lista limpa'); break;
+    case 'limparAba':
+      var rAb=(V.listaAba||'').slice(2), tiraId={};
+      S.lista.forEach(function(l){if(l.rec&&l.rec.indexOf(rAb)>=0){l.rec=l.rec.filter(function(r){return r!==rAb;});if(!l.rec.length)tiraId[l.id]=1;}});
+      S.lista=S.lista.filter(function(l){return !tiraId[l.id];});
+      V.listaAba='todos'; save(); fechar(); render(); toast('Receita removida da lista'); break;
     case 'meta': var mv=prompt('Meta de gasto no mercado por mês (R$). Deixe vazio para remover:',S.meta?String(S.meta).replace('.',','):''); if(mv!==null){var nv=NotaParser.num(mv);S.meta=nv>0?Math.round(nv*100)/100:0;save();render();} break;
     case 'backupJa': fazerBackup(); break;
     case 'peso':
