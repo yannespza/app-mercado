@@ -645,7 +645,7 @@ function telaLista(){
     h+='<div class="card mb"><div class="chead"><h2>'+abertos.length+' '+(abertos.length===1?'item':'itens')+'</h2>'+(feitos.length?'<button class="sub link" data-act="limparFeitos">Limpar marcados ('+feitos.length+')</button>':'')+'</div><div class="list">'+
       abertos.concat(feitos).map(function(l){
         var G=grupoDaLista(l), u=precoMaisBarato(G);
-        var info=[l.qtd?esc(l.qtd):'', u?'mais barato no '+esc(nomeMercado(G.maisBarato))+' · '+$$ref(u):''].filter(Boolean).join(' · ');
+        var info=[l.qtd?esc(l.qtd):'', recTxt(l), u?'mais barato no '+esc(nomeMercado(G.maisBarato))+' · '+$$ref(u):''].filter(Boolean).join(' · ');
         return '<div class="li litem'+(l.feito?' feito':'')+'"><button class="chk" data-act="toggleLista" data-id="'+esc(l.id)+'" aria-label="Marcar">'+(l.feito?I.check:'')+'</button>'+
           '<button class="tx" style="text-align:left" '+(G?'data-act="produto" data-g="'+esc(G.id)+'"':'data-act="toggleLista" data-id="'+esc(l.id)+'"')+'><div class="t1">'+esc(G?nomeG(G):l.nome)+'</div>'+(info?'<div class="t2 wrap">'+info+'</div>':'')+'</button>'+
           '<button class="iconbtn" style="width:34px;height:34px;border:0" data-act="tirarLista" data-id="'+esc(l.id)+'" aria-label="Remover">'+I.x.replace('<svg','<svg style="width:16px;height:16px"')+'</button></div>';
@@ -734,6 +734,7 @@ function custo(it,c){
   if(a.qtd&&r.base===a.base) return r.v*a.qtd;
   return c.preco*Math.max(1,Math.round(a.un||1));
 }
+function recTxt(l){return l&&l.rec&&l.rec.length?'🍽️ '+esc(l.rec.join(', ')):'';}
 function itensPesquisa(){
   return S.lista.filter(function(l){return !l.feito;}).map(function(l){var G=grupoDaLista(l);return {id:l.id,l:l,G:G,nome:G?nomeG(G):l.nome,alvo:G?G.nome:l.nome,q:l.termo||termoAuto(G?G.nome:l.nome)};});
 }
@@ -839,9 +840,9 @@ function telaPrecos(){
   h+='<div class="card mb"><div class="chead"><h2>Onde comprar</h2><span class="sub">do mais barato</span></div>'+
     '<p class="sub" style="margin:-6px 0 12px">Total da lista nas quantidades que você costuma levar. Item que a loja não tem entra pelo preço médio das outras.</p>'+
     R.tab.map(function(t,i){var L=lojaInfo(t.id),dif=t.total-top.total;
-      return '<div class="rank '+(i===0?'first':'')+'"><span class="pos">'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(preferida(L)?'<span style="color:#f0c46a">★</span> ':'')+esc(L.nome)+'</b><b>'+$$(t.total)+'</b></div>'+
-        '<div class="sub">'+(i===0?'<span style="color:var(--lime);font-weight:700">mais barato</span> · ':(dif>0.005?'<span style="color:var(--red)">+'+$$(dif)+'</span> · ':''))+(t.d!=null?(t.d<1?'<1':Math.round(t.d))+' km · ':'')+'achou '+t.n+' de '+its.length+(t.nEst?' ('+t.nEst+' pela média)':'')+(L.obs?' · '+L.obs:'')+'</div></div></div>';
-    }).join('')+
+      return '<button class="rank '+(i===0?'first':'')+'" data-act="verLoja" data-l="'+esc(t.id)+'" style="width:100%;text-align:left;color:inherit;font:inherit"><span class="pos">'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(preferida(L)?'<span style="color:#f0c46a">★</span> ':'')+esc(L.nome)+'</b><b>'+$$(t.total)+'</b></div>'+
+        '<div class="sub">'+(i===0?'<span style="color:var(--lime);font-weight:700">mais barato</span> · ':(dif>0.005?'<span style="color:var(--red)">+'+$$(dif)+'</span> · ':''))+(t.d!=null?(t.d<1?'<1':Math.round(t.d))+' km · ':'')+'achou '+t.n+' de '+its.length+(t.nEst?' ('+t.nEst+' pela média)':'')+(L.obs?' · '+L.obs:'')+'</div></div><span class="sub" style="font-size:20px;flex:none">›</span></button>';
+    }).join('')+'<p class="sub" style="margin:2px 2px 0">Toque num mercado para ver item por item.</p>'+
     (R.achados>1?'<div class="ok mt">Comprando cada item onde está mais barato: <b>'+$$(R.melhor)+'</b> ('+R.achados+' itens)</div>':'')+'</div>';
   // por produto
   h+='<h2 style="margin:18px 2px 10px">Por produto</h2>';
@@ -862,6 +863,30 @@ function telaPrecos(){
   });
   h+='<p class="sub" style="text-align:center;margin:14px 8px 0">Quando a busca não tem marca, o app pega a opção mais barata que corresponde em cada loja. Toque numa loja para escolher outro produto, ou em “mudar” para incluir a marca.</p><p class="sub" style="text-align:center;margin:8px 8px 0">Preços dos sites dos mercados no momento da pesquisa. Na loja física o preço pode ser diferente. Condor e Carrefour não liberam consulta de preços pelo site, e o Jacomar vende só pelo iFood.</p>';
   return h;
+}
+function verLoja(lid){
+  var P=S.pesquisa; if(!P) return; var its=itensPesquisa(), R=resumoPesquisa(P,its), t=R.tab.filter(function(x){return x.id===lid;})[0]; if(!t) return;
+  var L=lojaInfo(lid), pos=R.tab.indexOf(t);
+  var linhas=its.map(function(it){
+    var e=escolhido(P,it,lid), v=e?custo(it,e.c):null, mn=null, ondeMn=null;
+    R.tab.forEach(function(o){var x=o.custos[it.id];if(x!=null&&(mn==null||x<mn-0.005)){mn=x;ondeMn=o.id;}});
+    return {it:it,e:e,v:v,mn:mn,ondeMn:ondeMn};});
+  linhas.sort(function(a,b){return (a.e?0:1)-(b.e?0:1)||a.it.nome.localeCompare(b.it.nome,'pt-BR');});
+  var maisBarato=linhas.filter(function(x){return x.e&&x.v-x.mn<0.005;}).length;
+  var h=shead((preferida(L)?'<span style="color:#f0c46a">★</span> ':'')+esc(L.nome))+
+    '<div class="card mb" style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><div class="sub">Total da lista aqui'+(t.nEst?' (com '+t.nEst+' pela média)':'')+'</div><b style="font-size:22px">'+$$(t.total)+'</b></div>'+
+    '<div class="sub" style="text-align:right">'+(pos===0?'<span style="color:var(--lime);font-weight:700">mais barato</span>':(pos+1)+'º lugar')+'<br>'+maisBarato+' de '+t.n+' itens no menor preço</div></div>'+
+    '<div class="list">'+linhas.map(function(x){var it=x.it,c=x.e&&x.e.c,rt=recTxt(it.l);
+      if(!c) return '<button class="li" style="padding:10px 0" data-act="cands" data-i="'+esc(it.id)+'" data-l="'+esc(lid)+'"><div class="tx"><div class="t1">'+esc(it.nome)+'</div><div class="t2 wrap">'+(rt?rt+' · ':'')+'<span style="color:var(--red)">não encontrado aqui</span>'+(x.mn!=null?' · '+$$(x.mn)+' no '+esc(lojaInfo(x.ondeMn).nome):'')+'</div></div><div class="vv sub">—</div></button>';
+      var barato=x.v-x.mn<0.005, r=refCand(c);
+      return '<button class="li" style="padding:10px 0" data-act="cands" data-i="'+esc(it.id)+'" data-l="'+esc(lid)+'"><div class="tx"><div class="t1">'+esc(it.nome)+'</div>'+
+        '<div class="t2 wrap">'+esc(c.nome)+(c.disp?'':' · <span style="color:#f0c46a">sem estoque online</span>')+'</div>'+
+        (rt?'<div class="t2 wrap">'+rt+'</div>':'')+
+        (barato?'':'<div class="t2 wrap" style="color:var(--red)">'+$$(x.mn)+' no '+esc(lojaInfo(x.ondeMn).nome)+' (economia '+$$(x.v-x.mn)+')</div>')+'</div>'+
+        '<div class="vv"><div class="pr '+(barato?'good':'bad')+'">'+$$(x.v)+'</div>'+(Math.abs(x.v-c.preco)>0.005?'<div class="sub">'+$$(c.preco)+(c.un==='kg'?'/kg':' cada')+'</div>':(r.base!=='un'&&c.un!=='kg'?'<div class="sub">'+$$(r.v)+uRef(r.base)+'</div>':''))+'</div></button>';
+    }).join('')+'</div>'+
+    '<p class="sub" style="margin:12px 2px 0">Verde: o menor preço entre os mercados pesquisados. Vermelho: em outro mercado sai mais barato. Toque num item para trocar o produto.</p>';
+  V.lojaAberta=lid; abrir(h);
 }
 function verCands(iid,lid){
   var P=S.pesquisa; if(!P) return; var it=itensPesquisa().filter(function(x){return x.id===iid;})[0]; if(!it) return;
@@ -935,8 +960,9 @@ function importarCardapio(){
 }
 
 /* ---------- Novidades da versão ---------- */
-var VERSAO=9;
+var VERSAO=10;
 var NOVIDADES=[
+ {e:'🏪',t:'Ver os itens de cada mercado',d:'Em Comparar preços, toque num mercado do "Onde comprar" para ver item por item: o produto, o preço, se é o mais barato e de qual receita do Cardápio ele veio.',ir:{tab:'precos',sel:'[data-act=verLoja]',dica:'Toque num mercado para ver os itens'}},
  {e:'☰',t:'App mais limpo, com menu',d:'As telas agora ficam no menu do canto de cima. O botão verde redondo lê a nota fiscal de qualquer tela.',ir:{tab:'inicio',sel:'.menuBtn',dica:'Toque aqui para ver todas as telas'}},
  {e:'⚖️',t:'Comparação mais justa',d:'Mês a mês, cada produto é comparado só com a compra anterior no mesmo mercado. Entre mercados, só com preços do mesmo mês, para a inflação não distorcer.',ir:{tab:'mercados',sel:'.rank',dica:'Ranking com preços do mesmo mês'}},
  {e:'🔎',t:'Comparar preços da lista',d:'Na Lista, o botão roxo embaixo compara sua lista no Muffato, Festval, Angeloni e Atacadão perto de você, do mais barato ao mais caro.',ir:{tab:'lista',sel:'.fixoPrecos',dica:'Toque para ver quanto a lista custa em cada mercado',precisa:'lista'}},
@@ -1068,7 +1094,7 @@ function telaMercados(){
 
 /* ---------- folhas (sheets) ---------- */
 function abrir(html){document.getElementById('sheet').innerHTML='<div class="grab"></div>'+html;document.getElementById('overlay').classList.add('open');document.getElementById('sheet').scrollTop=0;}
-function fechar(){pararCamera();document.getElementById('overlay').classList.remove('open');}
+function fechar(){V.lojaAberta=null;pararCamera();document.getElementById('overlay').classList.remove('open');}
 function shead(t){return '<div class="shead"><h2>'+t+'</h2><button class="iconbtn" data-act="fechar" aria-label="Fechar">'+I.x+'</button></div>';}
 
 function verNota(id){
@@ -1359,7 +1385,9 @@ document.addEventListener('click',function(e){
     case 'impTg': V.imp.forEach(function(x){if(x.i===+t.dataset.i)x.on=!x.on;}); var top0=document.getElementById('sheet').scrollTop; desenharImport(); document.getElementById('sheet').scrollTop=top0; break;
     case 'impOk':
       var nAdd=0; (V.imp||[]).forEach(function(x){if(!x.on)return;var al=partesAlvo(x.parts);
-        S.lista.push({id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),g:x.G?x.G.id:null,nome:x.G?x.G.nome:x.n,feito:false,qtd:x.qtd,orig:'cardapio',alvoQ:al,termo:x.G?undefined:x.n});nAdd++;});
+        S.lista.push({id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),g:x.G?x.G.id:null,nome:x.G?x.G.nome:x.n,feito:false,qtd:x.qtd,orig:'cardapio',rec:(x.rec&&x.rec.length?x.rec:(V.impRec?[V.impRec]:undefined)),alvoQ:al,termo:x.G?undefined:x.n});nAdd++;});
+      (V.imp||[]).forEach(function(x){if(x.on||!x.ja)return;var rs=(x.rec&&x.rec.length?x.rec:(V.impRec?[V.impRec]:[]));if(!rs.length)return;
+        S.lista.forEach(function(l){if(l.feito)return;var G=grupoDaLista(l);if((x.G&&G&&G.id===x.G.id)||norm(l.nome)===norm(x.n)){l.rec=l.rec||[];rs.forEach(function(r){if(l.rec.indexOf(r)<0)l.rec.push(r);});}});});
       V.imp=null; save(); V.tab='lista'; render();
       abrir(shead('Itens na lista')+'<div class="ok">'+nAdd+(nAdd===1?' item do cardápio foi adicionado':' itens do cardápio foram adicionados')+' à sua lista.</div>'+
         '<p class="sub" style="margin:12px 2px">Quer ver agora quanto essa lista custa hoje no Muffato, Festval, Angeloni e Atacadão perto de você?</p>'+
@@ -1370,7 +1398,8 @@ document.addEventListener('click',function(e){
     case 'raio': S.raio=+t.dataset.v; save(); pesquisarPrecos(); break;
     case 'soPref': S.soPref=!!+t.dataset.v; save(); pesquisarPrecos(); break;
     case 'cands': verCands(t.dataset.i,t.dataset.l); break;
-    case 'escolher': if(S.pesquisa){S.pesquisa.escolha[t.dataset.i+'|'+t.dataset.l]=+t.dataset.k;save();} fechar(); render(); break;
+    case 'verLoja': verLoja(t.dataset.l); break;
+    case 'escolher': if(S.pesquisa){S.pesquisa.escolha[t.dataset.i+'|'+t.dataset.l]=+t.dataset.k;save();} var vl=V.lojaAberta; fechar(); render(); if(vl)verLoja(vl); break;
     case 'termo':
       var li=S.lista.filter(function(x){return x.id===t.dataset.id;})[0]; if(!li) break;
       var Gt=grupoDaLista(li), atualT=li.termo||termoAuto(Gt?Gt.nome:li.nome);
