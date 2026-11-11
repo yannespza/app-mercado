@@ -181,8 +181,8 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
 .pr.bad{color:var(--red)!important;font-weight:700}
 .un{font-size:.78em;color:var(--muted);font-weight:500;margin-left:1px}
 .pr.good .un,.pr.bad .un{color:inherit;opacity:.75}
-.li.rep{padding-left:12px;position:relative}
-.li.rep::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--line2)}
+.li.rep{position:relative}
+.li.rep::before{display:none;content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--line2)}
 .li.rep.good::before{background:var(--lime)}
 .li.rep.bad::before{background:var(--red)}
 .li.rep .vv{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
@@ -225,6 +225,19 @@ h2{font-size:19px;font-weight:500;letter-spacing:-.01em;margin:0}
   .top .brand{visibility:hidden}
   .app{padding-bottom:40px}
 }
+
+/* ---- visual mais limpo ---- */
+body{background:var(--bg)}
+.card{background:var(--card);border-color:rgba(255,255,255,.06)}
+.chead h2{font-size:17px;font-weight:700}
+.li{padding:14px 0;gap:14px}
+.li .t1{font-size:15px}
+.li .t2{margin-top:3px}
+.li .ic{width:36px;height:36px;border-radius:50%;font-size:12px}
+.badge{font-size:11px;padding:2px 7px}
+.mb{margin-bottom:14px}
+.bar.on i{box-shadow:none}
+.fabScan{box-shadow:0 6px 18px rgba(0,0,0,.35),0 0 0 5px var(--bg)}
 </style>
 <script src="instalar.js" data-cor="#5E8C1F" defer></script>
 </head>
@@ -544,7 +557,7 @@ function telaInicio(){
   if(!S.notas.length) return topo('Meu Mercado')+vazioGeral();
   var mk=mesAtual(), M=c.meses[mk]||{total:0,notas:[],porMercado:{}}, P=c.meses[addMes(mk,-1)];
   var dif=P&&P.total?M.total/P.total-1:null, ticket=M.notas.length?M.total/M.notas.length:0;
-  var h=topo('Início','<div style="margin:0 auto">'+seletorMes()+'</div>')+bannerExemplo()+bannerBackup();
+  var h=topo('Início','<div style="margin:0 auto">'+seletorMes()+'</div>')+(V.tab==='inicio'?bannerExemplo():'')+bannerBackup();
   // resumo do mês (gasto, comparação e meta num só cartão)
   h+='<div class="card mb hero"><div class="sub">Gasto em '+mesNome(mk).split(' ')[0]+'</div>'+
     '<div class="big">'+$$(M.total)+(dif==null?'':'<span class="badge '+(dif>0?'b-bad':'b-good')+'">'+pct(dif)+'</span>')+'</div>'+
@@ -561,7 +574,7 @@ function telaInicio(){
   var mud=variacoesDoMes(mk).filter(function(v){return tom(v.v)!=='neu';}).sort(function(a,b){return Math.abs(b.v)-Math.abs(a.v);});
   if(mud.length){
     h+='<div class="card mb"><div class="chead"><h2>Preços que mudaram</h2><button class="sub link" data-act="verRepetidos">Ver todos ('+mud.length+') →</button></div><div class="list">'+
-      mud.slice(0,3).map(function(v){var t=tom(v.v);return '<button class="li" data-act="produto" data-g="'+esc(v.g.id)+'"><div class="tx"><div class="t1">'+esc(nomeG(v.g))+'</div><div class="t2 wrap">'+esc(nomeMercado(v.m))+' · '+mesCurto(v.mesAnt)+' '+$$ref(v.de)+' → '+$$ref(v.para)+'</div></div><span class="badge '+(t==='bad'?'b-bad':'b-good')+'">'+pct(v.v)+'</span></button>';}).join('')+'</div></div>';
+      mud.slice(0,3).map(function(v){var t=tom(v.v);return '<button class="li" data-act="produto" data-g="'+esc(v.g.id)+'"><div class="tx"><div class="t1">'+esc(nomeG(v.g))+'</div><div class="t2">'+$$ref(v.de)+' → '+$$ref(v.para)+' · '+esc(nomeMercado(v.m))+'</div></div><span class="badge '+(t==='bad'?'b-bad':'b-good')+'">'+pct(v.v)+'</span></button>';}).join('')+'</div></div>';
   }
   h+='<div class="card"><div class="chead"><h2>Compras do mês</h2>'+(M.notas.length>3?'<button class="sub link" data-tab="notas">Ver todas →</button>':'')+'</div>'+listaNotas(M.notas.slice().reverse().slice(0,3),'Nenhuma nota neste mês. Toque no botão verde para ler uma.')+'</div>';
   return h;
@@ -612,7 +625,7 @@ function vazioGeral(){
 /* ---------- Compras ---------- */
 function telaNotas(){
   var c=calc(), ks=mesesComDados().reverse();
-  var h=topo('Compras')+bannerExemplo();
+  var h=topo('Compras')+(V.tab==='inicio'?bannerExemplo():'');
   if(!ks.length) return h+vazioGeral();
   ks.forEach(function(k){var M=c.meses[k];h+='<div class="card mb"><div class="chead"><h2 style="text-transform:capitalize">'+mesNome(k)+'</h2><span class="badge b-pur">'+$$(M.total)+'</span></div>'+listaNotas(M.notas.slice().reverse(),'')+'</div>';});
   return h;
@@ -642,7 +655,7 @@ function sugestoesLista(){
     .sort(function(a,b){return b.r.razao-a.r.razao;});
 }
 function telaLista(){
-  var h=topo('Lista de compras')+bannerExemplo();
+  var h=topo('Lista de compras')+(V.tab==='inicio'?bannerExemplo():'');
   var abertos=S.lista.filter(function(l){return !l.feito;}), feitos=S.lista.filter(function(l){return l.feito;});
   h+='<div class="addrow"><input id="addLista" placeholder="Adicionar item (ex.: café)" autocomplete="off"><button class="btn pri" data-act="addLivre" aria-label="Adicionar">'+I.plus.replace('<svg','<svg style="width:20px;height:20px"')+'</button>'+
     '<button class="btn" data-act="importarCardapio" aria-label="Importar do Cardápio da Semana" title="Importar do Cardápio da Semana" style="font-size:19px;padding:0 13px">🍽️</button></div><div id="addSug" class="mb"></div>';
@@ -724,7 +737,23 @@ function termoAuto(nome){
 var STOP={DE:1,DA:1,DO:1,COM:1,SEM:1,PARA:1,TIPO:1,TRADICIONAL:1};
 function toks(s){return norm(s).split(' ').filter(function(w){return w.length>=3&&!/^\d/.test(w)&&!STOP[w];}).map(function(w){return ABREV[w]?norm(ABREV[w]).split(' ')[0]:w;});}
 /* Nota de 0 a 1+ para "o produto do site é o mesmo da lista?" */
+/* Tipo de carne: "alcatra bovina" nunca pode virar "alcatra suína" só por ser mais barata */
+var TIPOW=/^(bovin[ao]s?|suin[ao]s?|boi|porco)$/;
+function tipoCarne(s){
+  var t=norm(String(s||'')).toLowerCase();
+  if(/\b(suin|sui\b|porco|leitao)/.test(t)) return 'suina';
+  if(/\b(bovin|bov\b|boi\b|novilh|angus|wagyu)/.test(t)) return 'bovina';
+  if(/\b(frango|galinha|sobrecoxa|chester|peru)\b/.test(t)) return 'ave';
+  if(/\b(tilapia|salmao|merluza|peixe|bacalhau|camarao|sardinha|atum|pescada)/.test(t)) return 'peixe';
+  if(/\b(pernil|bisteca|lombo|costelinha|linguica|bacon|panceta)/.test(t)) return 'suina';
+  if(/\b(acem|patinho|coxao|contrafile|maminha|musculo|fraldinha|cupim|alcatra|picanha|costela|carne)/.test(t)) return 'bovina';
+  return '';
+}
+function tipoBate(alvo,c){var a=tipoCarne(alvo); if(!a) return true; var b=tipoCarne(c.nome); return !b||b===a;}
+function semTipo(q){return String(q||'').split(' ').filter(function(w){return !TIPOW.test(norm(w).toLowerCase());}).join(' ');}
 function pontua(alvo,c){
+  if(!tipoBate(alvo,c)) return 0;
+  alvo=semTipo(alvo);
   var a=toks(alvo), b=toks(c.nome+' '+(c.marca||'')); if(!a.length||!b.length) return 0;
   var bate=function(w){return b.some(function(x){return x===w||(w.length>=3&&x.indexOf(w)===0)||(x.length>=4&&w.indexOf(x)===0);});};
   if(!bate(a[0])) return 0; // o tipo do produto (arroz, café...) precisa bater
@@ -757,7 +786,7 @@ function custo(it,c){
 }
 function recTxt(l){return l&&l.rec&&l.rec.length?'🍽️ '+esc(l.rec.join(', ')):'';}
 function itensPesquisa(){
-  return S.lista.filter(function(l){return !l.feito;}).map(function(l){var G=grupoDaLista(l);return {id:l.id,l:l,G:G,nome:G?nomeG(G):l.nome,alvo:G?G.nome:l.nome,q:l.termo||termoAuto(G?G.nome:l.nome)};});
+  return S.lista.filter(function(l){return !l.feito;}).map(function(l){var G=grupoDaLista(l);return {id:l.id,l:l,G:G,nome:G?nomeG(G):l.nome,alvo:G?G.nome:l.nome,q:l.termo||semTipo(termoAuto(G?G.nome:l.nome))};});
 }
 function escolhido(P,it,lojaId){
   var r=P.res[lojaId]; if(!r||!r[it.id]) return null; var cs=r[it.id];
@@ -1014,8 +1043,10 @@ function importarCardapio(){
 }
 
 /* ---------- Novidades da versão ---------- */
-var VERSAO=12;
+var VERSAO=13;
 var NOVIDADES=[
+ {e:'🥩',t:'Carne certa na comparação',d:'Se a lista pede alcatra bovina, o app não troca mais por alcatra suína (ou frango) só porque é mais barata. Vale para todas as carnes.',ir:{tab:'lista',sel:'[data-act=importarCardapio]',dica:'Importe do Cardápio para testar'}},
+ {e:'🧹',t:'Visual mais limpo',d:'Listas com mais espaço, uma linha de detalhe por produto (preço anterior e mercado) e menos avisos repetidos pelas telas.',ir:{tab:'produtos',sel:'#busca',dica:'Veja a lista de produtos'}},
  {e:'🗂️',t:'Abas por receita e limpar lista',d:'Na Lista, os ingredientes importados ficam em abas, uma por receita. Toque em Limpar lista para esvaziar tudo, só os marcados ou só uma receita.',ir:{tab:'lista',sel:'[data-act=limparLista]',dica:'Toque aqui para limpar a lista',precisa:'lista'}},
  {e:'📤',t:'Compartilhe o app',d:'No menu, Compartilhar o app manda o link para quem você quiser. A pessoa recebe o app limpo, só com os dados dela, e a tela Sobre o app explicando tudo.',ir:{tab:'inicio',sel:'.menuBtn',dica:'Abra o menu: Sobre o app e Compartilhar ficam no final'}},
  {e:'★',t:'Escolha seus mercados preferidos',d:'Em Comparar preços, marque com ★ as redes que você prefere. O filtro Só preferidos usa a sua escolha.',ir:{tab:'precos',sel:'.pchip',dica:'Toque para marcar ou desmarcar'}},
@@ -1064,13 +1095,12 @@ function tirarDica(){var b=document.getElementById('dicaBalao');if(b)b.remove();
 
 /* ---------- Produtos ---------- */
 function telaProdutos(){
-  var h=topo('Produtos','<div class="seg" style="width:100%"><button data-act="pview" data-v="repetidos" class="'+(V.pview==='repetidos'?'on':'')+'">Mudaram de preço</button><button data-act="pview" data-v="todos" class="'+(V.pview==='todos'?'on':'')+'">Todos</button></div>')+bannerExemplo();
+  var h=topo('Produtos','<div class="seg" style="width:100%"><button data-act="pview" data-v="repetidos" class="'+(V.pview==='repetidos'?'on':'')+'">Mudaram de preço</button><button data-act="pview" data-v="todos" class="'+(V.pview==='todos'?'on':'')+'">Todos</button></div>')+(V.tab==='inicio'?bannerExemplo():'');
   if(!S.notas.length) return h+vazioGeral();
   if(V.pview==='repetidos'){
     var rs=repetidos(), n={todos:rs.length,subiu:0,baixou:0};
     rs.forEach(function(r){var t=tom(r.a.v);if(t==='bad')n.subiu++;else if(t==='good')n.baixou++;});
-    h+='<div class="fchips">'+[['todos','Todos'],['subiu','▲ Subiram'],['baixou','▼ Baixaram']].map(function(f){return '<button class="fchip '+f[0]+(V.rep===f[0]?' on':'')+'" data-act="rep" data-v="'+f[0]+'">'+f[1]+' <b>'+n[f[0]]+'</b></button>';}).join('')+'</div>'+
-      '<p class="sub" style="margin:0 2px 12px">Última compra vs a anterior <b>no mesmo mercado</b>, pelo preço do quilo/litro.</p>';
+    h+='<div class="fchips">'+[['todos','Todos'],['subiu','▲ Subiram'],['baixou','▼ Baixaram']].map(function(f){return '<button class="fchip '+f[0]+(V.rep===f[0]?' on':'')+'" data-act="rep" data-v="'+f[0]+'">'+f[1]+' <b>'+n[f[0]]+'</b></button>';}).join('')+'</div>';
   }
   h+='<div class="search">'+I.search+'<input id="busca" placeholder="Buscar produto" value="'+esc(V.busca)+'" autocomplete="off"></div><div id="plist">'+(V.pview==='repetidos'?listaRepetidos():listaProdutos())+'</div>';
   var sug=sugestoes();
@@ -1095,7 +1125,7 @@ function listaRepetidos(){
   return '<div class="card"><div class="list">'+rs.map(function(r){
     var t=tom(r.a.v), p=r.a.prev, x=r.c, pacote=x.base!=='un'&&Math.abs(x.ref-x.vUnit)>0.005;
     return '<button class="li rep '+t+'" data-act="produto" data-g="'+esc(r.G.id)+'"><div class="tx"><div class="t1">'+esc(nomeG(r.G))+'</div>'+
-      '<div class="t2 wrap">'+esc(nomeMercado(x.mid))+' · '+mesCurto(p.mes)+' '+$$ref(p)+' → '+mesCurto(x.mes)+(pacote?' · pacote '+$$(x.vUnit):'')+'</div></div>'+
+      '<div class="t2">antes '+$$ref(p)+' · '+esc(nomeMercado(x.mid))+'</div></div>'+
       '<div class="vv"><div class="pr '+t+'">'+$$ref(x)+'</div><span class="badge '+(t==='bad'?'b-bad':t==='good'?'b-good':'b-neu')+'">'+(t==='neu'?'igual':pct(r.a.v))+'</span></div></button>';
   }).join('')+'</div></div>';
 }
@@ -1113,10 +1143,10 @@ function listaProdutos(){
 
 /* ---------- Mercados ---------- */
 function telaMercados(){
-  var c=calc(), h=topo('Mercados')+bannerExemplo();
+  var c=calc(), h=topo('Mercados')+(V.tab==='inicio'?bannerExemplo():'');
   if(!S.notas.length) return h+vazioGeral();
   var r=c.ranking;
-  h+='<div class="card mb"><div class="chead"><h2>Onde vale mais a pena</h2></div><p class="sub" style="margin:-6px 0 14px">Mesmo produto, <b>mesmo mês</b>, mercados diferentes'+(r.periodo?' ('+(r.periodo.de===r.periodo.ate?mesNome(r.periodo.ate):mesCurto(r.periodo.de)+' a '+mesCurto(r.periodo.ate))+')':'')+'. Assim a inflação, que sobe para todos, não distorce a comparação.</p>';
+  h+='<div class="card mb"><div class="chead"><h2>Onde vale mais a pena</h2></div><p class="sub" style="margin:-6px 0 14px">Mesmo produto, <b>mesmo mês</b>, mercados diferentes'+(r.periodo?' ('+(r.periodo.de===r.periodo.ate?mesNome(r.periodo.ate):mesCurto(r.periodo.de)+' a '+mesCurto(r.periodo.ate))+')':'')+'.</p>';
   if(!r.length){
     h+='<div class="empty"><b>Ainda não dá para comparar</b>Leia notas de 2 mercados diferentes no mesmo mês, com produtos em comum.</div>';
   }else{
@@ -1124,7 +1154,7 @@ function telaMercados(){
     h+=r.map(function(x,i){
       var good=x.indice<0;
       return '<div class="rank '+(i===0?'first':'')+'"><span class="pos">'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.nome)+'</b><span class="badge '+(Math.abs(x.indice)<0.005?'b-neu':good?'b-good':'b-bad')+'">'+pct(x.indice)+'</span></div>'+
-        '<div class="sub">'+x.n+' comparações · mais barato em '+x.maisBarato+', mais caro em '+x.maisCaro+'</div>'+
+        '<div class="sub">'+'mais barato em '+x.maisBarato+' de '+x.n+' produtos'+'</div>'+
         '<div class="meter"><i style="width:'+Math.max(4,Math.abs(x.indice)/mx*100)+'%;background:'+(good?'var(--lime)':'var(--red)')+'"></i></div></div></div>';
     }).join('');
   }
