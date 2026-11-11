@@ -249,6 +249,8 @@ body{background:var(--bg)}
 .side .segs button.on{background:var(--purpleBg);color:var(--text)}
 .side .segs button.on .st{color:var(--purple)}
 .top h1 small{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:1px;cursor:pointer}
+a.li,a.fchip{color:inherit;text-decoration:none}
+a.li .t1{color:var(--text)}
 </style>
 <script src="instalar.js" data-cor="#5E8C1F" defer></script>
 </head>
@@ -528,7 +530,7 @@ var SEGN={};SEGS.forEach(function(x){SEGN[x[0]]=x;});
 function segDe(n){return (n&&n.seg)||'mercado';}
 function segAtual(){return SEGN[S.segV]?S.segV:'mercado';}
 function notasSeg(){var sg=segAtual();return S.notas.filter(function(n){return segDe(n)===sg;});}
-function trocarSeg(sg){if(!SEGN[sg])return;S.segV=sg;V.mes=null;V.busca='';if(sg!=='mercado'&&(V.tab==='lista'||V.tab==='precos'))V.tab='inicio';save();fechar();render();window.scrollTo(0,0);}
+function trocarSeg(sg){if(!SEGN[sg])return;S.segV=sg;V.mes=null;V.busca='';if(sg!=='mercado'&&V.tab==='lista')V.tab='inicio';save();fechar();render();window.scrollTo(0,0);}
 /* adivinha o tipo de loja pelo nome, pela atividade (CNAE) e pelo modelo da nota */
 function adivinhaSeg(nome,cnae,modelo){
   var t=norm(nome||'').toLowerCase(), c=String(cnae||'').replace(/\D/g,'');
@@ -549,7 +551,7 @@ function renderNav(){
   S.notas.forEach(function(n){if((n.data||'').slice(0,7)===hm)totSeg[segDe(n)]=(totSeg[segDe(n)]||0)+(n.total||0);});
   document.getElementById('side').innerHTML='<div class="brand"><span class="logo">'+I.cart+'</span>Meu Mercado</div>'+
     '<div class="seglbl">Tipo de compra</div><div class="segs">'+SEGS.map(function(x){return '<button data-act="seg" data-v="'+x[0]+'" class="'+(sg===x[0]?'on':'')+'"><span class="se">'+x[2]+'</span><span class="sn">'+x[1]+'</span><span class="st">'+(totSeg[x[0]]?$$(totSeg[x[0]]):'—')+'</span></button>';}).join('')+'</div><div class="sep"></div>'+
-    SIDE.filter(function(n){return sg==='mercado'||(n[0]!=='lista'&&n[0]!=='precos');}).map(function(n){if(n[0]==='mercados')n=[n[0],SEGN[sg][3],n[2]];return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]?'on':'')+'">'+n[2]+'<span style="flex:1">'+n[1]+'</span>'+(n[0]==='lista'&&abertos?'<span class="badge b-pur">'+abertos+'</span>':'')+'</button>';}).join('')+
+    SIDE.filter(function(n){return sg==='mercado'||n[0]!=='lista';}).map(function(n){if(n[0]==='mercados')n=[n[0],SEGN[sg][3],n[2]];return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]?'on':'')+'">'+n[2]+'<span style="flex:1">'+n[1]+'</span>'+(n[0]==='lista'&&abertos?'<span class="badge b-pur">'+abertos+'</span>':'')+'</button>';}).join('')+
     '<div class="sep"></div><button data-act="scan">'+I.scan+'<span>Ler nota fiscal</span></button><button data-act="ajustes">'+I.gear+'<span>Ajustes e backup</span></button><button data-act="novidades"><span style="width:20px;text-align:center">✨</span><span>Novidades</span></button>'+
     '<div class="sep"></div><button data-tab="sobre" class="'+(V.tab==='sobre'?'on':'')+'"><span style="width:20px;text-align:center">ℹ️</span><span>Sobre o app</span></button><button data-act="compartilhar"><span style="width:20px;text-align:center">📤</span><span>Compartilhar o app</span></button>';
   document.getElementById('fabScan').innerHTML=I.scan;
@@ -573,7 +575,7 @@ function render(){
   if(V.tab==='inicio') h=telaInicio();
   else if(V.tab==='notas') h=telaNotas();
   else if(V.tab==='lista') h=telaLista();
-  else if(V.tab==='precos') h=telaPrecos();
+  else if(V.tab==='precos') h=segAtual()==='mercado'?telaPrecos():telaComparaSeg();
   else if(V.tab==='produtos') h=telaProdutos();
   else if(V.tab==='mercados') h=telaMercados();
   else if(V.tab==='sobre') h=telaSobre();
@@ -900,6 +902,61 @@ function resumoPesquisa(P,its){
   var melhor=0,achados=0; its.forEach(function(it){var m=null;tab.forEach(function(t){var v=t.custos[it.id];if(v!=null&&(m==null||v<m))m=v;});if(m!=null){melhor+=m;achados++;}});
   return {tab:tab,melhor:melhor,achados:achados,comPreco:Object.keys(media).length};
 }
+/* ---------- Comparar preços em farmácias e lojas online ---------- */
+var LOJAS_SEG={
+  farmacia:[{id:'paguemenos',nome:'Pague Menos'},{id:'drogariasaopaulo',nome:'Drogaria São Paulo'},{id:'pacheco',nome:'Drogarias Pacheco'},{id:'venancio',nome:'Drogaria Venancio'}],
+  online:[{id:'carrefour',nome:'Carrefour'},{id:'fastshop',nome:'Fast Shop'},{id:'polishop',nome:'Polishop'}],
+  outros:[]
+};
+var LINKS_SEG={
+  farmacia:[['Drogasil','https://www.drogasil.com.br/search?w='],['Droga Raia','https://www.drogaraia.com.br/search?w='],['Panvel','https://www.panvel.com/panvel/buscarProduto.do?termoPesquisa='],['Nissei','https://www.farmaciasnissei.com.br/pesquisa?q='],['Google Shopping','https://www.google.com/search?tbm=shop&q=']],
+  online:[['Amazon','https://www.amazon.com.br/s?k='],['Mercado Livre','https://lista.mercadolivre.com.br/'],['Magalu','https://www.magazineluiza.com.br/busca/'],['Shopee','https://shopee.com.br/search?keyword='],['KaBuM!','https://www.kabum.com.br/busca/'],['Google Shopping','https://www.google.com/search?tbm=shop&q=']],
+  outros:[['Google Shopping','https://www.google.com/search?tbm=shop&q='],['Mercado Livre','https://lista.mercadolivre.com.br/'],['Amazon','https://www.amazon.com.br/s?k=']]
+};
+function linkBusca(base,q){var t=encodeURIComponent(q);return base.indexOf('mercadolivre')>=0||base.indexOf('magazineluiza')>=0||base.indexOf('kabum')>=0?base+t.replace(/%20/g,'-')+'/':base+t;}
+/* o que você já pagou por algo parecido, nas suas notas deste tipo de compra */
+function jaPagou(q){
+  var c=calc(), a=toks(q), best=null;
+  Object.keys(c.grupos).forEach(function(k){var G=c.grupos[k],b=toks(G.nome);
+    var hit=a.filter(function(w){return b.some(function(x){return x===w||(w.length>=3&&x.indexOf(w)===0);});}).length;
+    if(hit&&hit/a.length>=0.6&&(!best||hit>best.hit)){var u=G.compras[G.compras.length-1];best={hit:hit,G:G,u:u};}});
+  return best;
+}
+function telaComparaSeg(){
+  var sg=segAtual(), ls=LOJAS_SEG[sg]||[], z=V.cz||{}, c=calc();
+  var h=topo('Comparar preços');
+  h+='<div class="card mb"><p class="sub" style="margin:0 0 10px">'+(sg==='farmacia'?'Remédio, vitamina ou produto de higiene: o app pesquisa nas farmácias online agora.':sg==='online'?'Digite o produto: o app pesquisa nas lojas online agora e abre a busca nas maiores lojas.':'Digite o produto para abrir a busca nas maiores lojas.')+'</p>'+
+    '<div style="display:flex;gap:8px"><input id="cq" placeholder="'+(sg==='farmacia'?'ex.: dipirona 1g':'ex.: fone bluetooth jbl')+'" value="'+esc(V.cq||'')+'" autocomplete="off" enterkeyhint="search"><button class="btn pri" data-act="cbuscar" style="flex:none;padding:0 18px">Buscar</button></div>';
+  var gs=Object.keys(c.grupos).map(function(k){return c.grupos[k];}).sort(function(a,b){return b.compras.length-a.compras.length;}).slice(0,8);
+  if(gs.length) h+='<div class="sub" style="margin:14px 0 8px">Já comprados aqui</div><div class="fchips" style="flex-wrap:wrap">'+gs.map(function(G){return '<button class="fchip" data-act="cchip" data-q="'+esc(termoAuto(G.nome))+'">'+esc(nomeG(G))+'</button>';}).join('')+'</div>';
+  h+='</div>';
+  if(!z.q) return h+(ls.length?'':'<div class="card"><div class="empty">Para este tipo de compra, o app abre a busca nas lojas (sem preço automático).</div></div>');
+  var jp=jaPagou(z.q);
+  if(jp) h+='<div class="linkline"><span>Você pagou <b style="color:var(--text)">'+$$(jp.u.vUnit)+'</b> em '+esc(nomeMercado(jp.u.mid))+' ('+mesCurto(jp.u.mes)+')</span><span class="sub">'+esc(nomeG(jp.G))+'</span></div>';
+  if(ls.length){
+    var linhas=[];
+    ls.forEach(function(L){var r=z.res&&z.res[L.id]; if(!r||r==='erro'||!r.length) return;
+      var sc=r.map(function(x){return pontua(z.q,x);}), bs=Math.max.apply(null,sc.concat([0]));
+      var ok=r.filter(function(x,i){return x.disp&&(bs<0.55||sc[i]>=bs-0.05);}); if(!ok.length) return;
+      ok.sort(function(a,b){return a.preco-b.preco;}); linhas.push({L:L,c:ok[0],outros:ok.length-1});});
+    linhas.sort(function(a,b){return a.c.preco-b.c.preco;});
+    var pend=ls.filter(function(L){return !z.res||z.res[L.id]===undefined;}).length;
+    h+='<div class="card mb"><div class="chead"><h2>Preços de agora</h2>'+(pend?'<span class="spin"></span>':'<span class="sub">'+linhas.length+' de '+ls.length+' lojas</span>')+'</div><div class="list">'+
+      (linhas.length?linhas.map(function(x,i){return '<a class="li" href="'+esc(x.c.link||'#')+'" target="_blank" rel="noopener"><span class="ic">'+esc(iniciais(x.L.nome))+'</span><div class="tx"><div class="t1">'+esc(x.L.nome)+'</div><div class="t2">'+esc(x.c.nome)+'</div></div><div class="vv"><div class="pr '+(i===0?'good':'')+'">'+$$(x.c.preco)+'</div>'+(i===0&&linhas.length>1?'<span class="badge b-good">mais barato</span>':x.c.de?'<span class="sub"><s>'+$$(x.c.de)+'</s></span>':'')+'</div></a>';}).join('')
+      :(pend?'<div class="sub" style="padding:10px 0">Pesquisando…</div>':'<div class="empty">Nenhuma loja encontrou esse produto. Tente um nome mais simples (ex.: só o produto e a marca) ou use as lojas abaixo.</div>'))+
+      '</div><p class="sub" style="margin:10px 0 8px">Toque numa loja para abrir o produto no site. Frete não incluso.</p></div>';
+  }
+  var lk=LINKS_SEG[sg]||[];
+  h+='<div class="card"><div class="chead"><h2>Procurar também em</h2></div><div class="fchips" style="flex-wrap:wrap;padding-bottom:12px">'+lk.map(function(x){return '<a class="fchip" href="'+esc(linkBusca(x[1],z.q))+'" target="_blank" rel="noopener">'+esc(x[0])+' ↗</a>';}).join('')+'</div></div>';
+  return h;
+}
+function compararSeg(q){
+  q=String(q||'').trim(); if(!q){toast('Digite o produto');return;}
+  V.cq=q; var ls=LOJAS_SEG[segAtual()]||[], z={q:q,res:{}}; V.cz=z; render();
+  ls.forEach(function(L){
+    pedirPrecos(L.id,[{id:'q',q:q}]).then(function(o){z.res[L.id]=o.q||[];},function(){z.res[L.id]='erro';}).then(function(){if(V.cz===z&&V.tab==='precos')render();});
+  });
+}
 function telaPrecos(){
   var h='<div class="top"><button class="iconbtn" data-tab="lista" aria-label="Voltar">'+I.left+'</button><div class="brand" style="font-size:17px">Preços de hoje</div><button class="iconbtn" data-act="pesquisarPrecos" aria-label="Atualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg></button></div>';
   var z=V.pz||{};
@@ -1073,8 +1130,9 @@ function importarCardapio(){
 }
 
 /* ---------- Novidades da versão ---------- */
-var VERSAO=14;
+var VERSAO=15;
 var NOVIDADES=[
+ {e:'🔎',t:'Comparar preços em farmácias e lojas online',d:'Nas abas Farmácia e Compras online, Comparar preços pesquisa o produto na hora nas lojas online (Pague Menos, Drogaria São Paulo, Carrefour…) e mostra a mais barata. Também abre a busca na Amazon, Mercado Livre, Drogasil, Raia e outras, e lembra quanto você já pagou.',ir:{tab:'precos',sel:'#cq',dica:'Digite o produto para comparar'}},
  {e:'🗂️',t:'Abas por tipo de compra',d:'No menu, escolha Mercado, Farmácia, Compras online ou Outros. Início, Produtos, Lojas e Notas mostram só aquele tipo, com o total do mês de cada um. A nota já vai sozinha para a aba certa, e dá para mudar na própria nota.',ir:{tab:'inicio',sel:'.menuBtn',dica:'Abra o menu para trocar de aba'}},
  {e:'📦',t:'Notas da Amazon, Mercado Livre e outras lojas',d:'Em Ler nota, aponte para o código de barras da DANFE ou digite a chave de acesso (44 números). Para trazer os produtos e preços, toque em Enviar arquivo e escolha o XML ou o PDF da nota.',ir:{tab:'inicio',sel:'#fabScan',dica:'Toque para ler ou enviar uma nota'}},
  {e:'🥩',t:'Carne certa na comparação',d:'Se a lista pede alcatra bovina, o app não troca mais por alcatra suína (ou frango) só porque é mais barata. Vale para todas as carnes.',ir:{tab:'lista',sel:'[data-act=importarCardapio]',dica:'Importe do Cardápio para testar'}},
@@ -1634,6 +1692,8 @@ document.addEventListener('click',function(e){
     case 'verSugestoes': verSugestoes(); break;
     case 'menu': menu(); break;
     case 'seg': trocarSeg(t.dataset.v); break;
+    case 'cbuscar': compararSeg((document.getElementById('cq')||{}).value); break;
+    case 'cchip': compararSeg(t.dataset.q); break;
     case 'ondeFoi': V.ondeFoi=t.dataset.v; render(); break;
     case 'verRepetidos': V.tab='produtos'; V.pview='repetidos'; V.rep='todos'; render(); window.scrollTo(0,0); break;
     case 'sugMais': V.sugMais=!V.sugMais; render(); break;
@@ -1654,6 +1714,7 @@ document.addEventListener('change',function(e){
 });
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape')fechar();
+  if(e.key==='Enter'&&e.target.id==='cq'){e.preventDefault();compararSeg(e.target.value);}
   if(e.key==='Enter'&&e.target.id==='addLista'){e.preventDefault();var b=document.querySelector('[data-act=addLivre]');if(b)b.click();}
 });
 

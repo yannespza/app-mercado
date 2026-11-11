@@ -12,7 +12,16 @@ const LOJAS = {
   'angeloni': { host: 'https://super.angeloni.com.br', sc: 1 },
   'atacadao': { host: 'https://www.atacadao.com.br', sc: 1, simular: true },
   // Festval: o preço e o estoque reais vêm da loja online de Curitiba (vendedor "meufestvaldark")
-  'festval': { host: 'https://www.festval.com', sc: 1, simular: true, seller: 'meufestvaldark' }
+  'festval': { host: 'https://www.festval.com', sc: 1, simular: true, seller: 'meufestvaldark' },
+  // Farmácias (preço nacional da loja online)
+  'paguemenos': { host: 'https://www.paguemenos.com.br', sc: 1 },
+  'drogariasaopaulo': { host: 'https://www.drogariasaopaulo.com.br', sc: 1 },
+  'pacheco': { host: 'https://www.drogariaspacheco.com.br', sc: 1 },
+  'venancio': { host: 'https://www.drogariavenancio.com.br', sc: 1 },
+  // Lojas online em geral
+  'carrefour': { host: 'https://www.carrefour.com.br', sc: 1 },
+  'fastshop': { host: 'https://www.fastshop.com.br', sc: 1 },
+  'polishop': { host: 'https://www.polishop.com.br', sc: 1 }
 };
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36',
