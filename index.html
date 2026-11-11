@@ -238,6 +238,17 @@ body{background:var(--bg)}
 .mb{margin-bottom:14px}
 .bar.on i{box-shadow:none}
 .fabScan{box-shadow:0 6px 18px rgba(0,0,0,.35),0 0 0 5px var(--bg)}
+
+/* abas de tipo de compra no menu */
+.seglbl{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:6px 12px 6px}
+.segs{display:flex;flex-direction:column;gap:2px}
+.side .segs button{padding:10px 12px}
+.segs .se{width:20px;text-align:center;font-size:17px}
+.segs .sn{flex:1}
+.segs .st{font-size:12px;color:var(--faint);font-weight:600}
+.side .segs button.on{background:var(--purpleBg);color:var(--text)}
+.side .segs button.on .st{color:var(--purple)}
+.top h1 small{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:1px;cursor:pointer}
 </style>
 <script src="instalar.js" data-cor="#5E8C1F" defer></script>
 </head>
@@ -397,7 +408,7 @@ function grupoDe(mid,it){
 function calc(){
   if(C) return C;
   var meses={}, mercados={}, grupos={}, idx={};
-  var notas=S.notas.slice().sort(function(a,b){return (a.data||'').localeCompare(b.data||'');});
+  var notas=notasSeg().sort(function(a,b){return (a.data||'').localeCompare(b.data||'');});
   notas.forEach(function(n){
     var mk=(n.data||'').slice(0,7)||hojeMes(); var mid=mercadoId(n);
     (meses[mk]=meses[mk]||{total:0,notas:[],porMercado:{}});
@@ -511,6 +522,22 @@ function juntar(A,B){
 function separar(G){Object.keys(G.keys).forEach(function(k){delete S.links[k];});save();}
 
 /* ---------- estado de tela ---------- */
+/* ---------- Segmentos: cada tipo de compra fica numa aba separada ---------- */
+var SEGS=[['mercado','Mercado','🛒','Mercados'],['farmacia','Farmácia','💊','Farmácias'],['online','Compras online','📦','Lojas online'],['outros','Outros','🧾','Lojas']];
+var SEGN={};SEGS.forEach(function(x){SEGN[x[0]]=x;});
+function segDe(n){return (n&&n.seg)||'mercado';}
+function segAtual(){return SEGN[S.segV]?S.segV:'mercado';}
+function notasSeg(){var sg=segAtual();return S.notas.filter(function(n){return segDe(n)===sg;});}
+function trocarSeg(sg){if(!SEGN[sg])return;S.segV=sg;V.mes=null;V.busca='';if(sg!=='mercado'&&(V.tab==='lista'||V.tab==='precos'))V.tab='inicio';save();fechar();render();window.scrollTo(0,0);}
+/* adivinha o tipo de loja pelo nome, pela atividade (CNAE) e pelo modelo da nota */
+function adivinhaSeg(nome,cnae,modelo){
+  var t=norm(nome||'').toLowerCase(), c=String(cnae||'').replace(/\D/g,'');
+  if(/amazon|mercado ?livre|mercadolivre|ebazar|magazine luiza|magalu|shopee|aliexpress|americanas|casas bahia|via varejo|grupo casas|netshoes|kabum|submarino|shein|temu|dafiti|zattini|centauro|fast shop|ponto frio|carrefour com|madeiramadeira|leroy/.test(t)) return 'online';
+  if(/farm|drog|raia|drogasil|panvel|pague menos|nissei|ultrafarma|pacheco|sao joao|venancio/.test(t)||/^4771/.test(c)) return 'farmacia';
+  if(/supermerc|mercado|mercearia|atacad|atacarejo|muffato|condor|jacomar|festval|angeloni|assai|hiper|sams club|makro|acougue|hortifruti|sacolao|fruteira|emporio|max atacad/.test(t)||/^47(11|12|21|22|23|24|29)/.test(c)) return 'mercado';
+  if(modelo==='55') return 'online';
+  return 'outros';
+}
 var V={tab:'inicio',mes:null,busca:'',parA:null,parB:null,pview:'repetidos',rep:'todos'};
 function mesesComDados(){return Object.keys(calc().meses).sort();}
 function mesAtual(){if(V.mes)return V.mes;var ks=mesesComDados();var h=hojeMes();return ks.indexOf(h)>=0||!ks.length?h:ks[ks.length-1];}
@@ -518,8 +545,11 @@ function mesAtual(){if(V.mes)return V.mes;var ks=mesesComDados();var h=hojeMes()
 var SIDE=[['inicio','Início',I.home],['lista','Lista de compras',I.list],['precos','Comparar preços',I.search],['produtos','Produtos',I.tag],['mercados','Mercados',I.store],['notas','Notas lidas',I.receipt]];
 function renderNav(){
   var abertos=S.lista.filter(function(l){return !l.feito;}).length;
+  var sg=segAtual(), hm=hojeMes(), totSeg={};
+  S.notas.forEach(function(n){if((n.data||'').slice(0,7)===hm)totSeg[segDe(n)]=(totSeg[segDe(n)]||0)+(n.total||0);});
   document.getElementById('side').innerHTML='<div class="brand"><span class="logo">'+I.cart+'</span>Meu Mercado</div>'+
-    SIDE.map(function(n){return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]?'on':'')+'">'+n[2]+'<span style="flex:1">'+n[1]+'</span>'+(n[0]==='lista'&&abertos?'<span class="badge b-pur">'+abertos+'</span>':'')+'</button>';}).join('')+
+    '<div class="seglbl">Tipo de compra</div><div class="segs">'+SEGS.map(function(x){return '<button data-act="seg" data-v="'+x[0]+'" class="'+(sg===x[0]?'on':'')+'"><span class="se">'+x[2]+'</span><span class="sn">'+x[1]+'</span><span class="st">'+(totSeg[x[0]]?$$(totSeg[x[0]]):'—')+'</span></button>';}).join('')+'</div><div class="sep"></div>'+
+    SIDE.filter(function(n){return sg==='mercado'||(n[0]!=='lista'&&n[0]!=='precos');}).map(function(n){if(n[0]==='mercados')n=[n[0],SEGN[sg][3],n[2]];return '<button data-tab="'+n[0]+'" class="'+(V.tab===n[0]?'on':'')+'">'+n[2]+'<span style="flex:1">'+n[1]+'</span>'+(n[0]==='lista'&&abertos?'<span class="badge b-pur">'+abertos+'</span>':'')+'</button>';}).join('')+
     '<div class="sep"></div><button data-act="scan">'+I.scan+'<span>Ler nota fiscal</span></button><button data-act="ajustes">'+I.gear+'<span>Ajustes e backup</span></button><button data-act="novidades"><span style="width:20px;text-align:center">✨</span><span>Novidades</span></button>'+
     '<div class="sep"></div><button data-tab="sobre" class="'+(V.tab==='sobre'?'on':'')+'"><span style="width:20px;text-align:center">ℹ️</span><span>Sobre o app</span></button><button data-act="compartilhar"><span style="width:20px;text-align:center">📤</span><span>Compartilhar o app</span></button>';
   document.getElementById('fabScan').innerHTML=I.scan;
@@ -527,7 +557,7 @@ function renderNav(){
 }
 function menu(abrir){var sd=document.getElementById('side'),bg=document.getElementById('drawerBg');var on=abrir==null?!sd.classList.contains('open'):abrir;sd.classList.toggle('open',on);bg.classList.toggle('open',on);}
 function topo(titulo,extra){
-  return '<div class="top"><button class="iconbtn menuBtn" data-act="menu" aria-label="Abrir menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>'+(titulo||'Meu Mercado')+'</h1><span style="width:42px"></span></div>'+
+  return '<div class="top"><button class="iconbtn menuBtn" data-act="menu" aria-label="Abrir menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>'+(titulo||'Meu Mercado')+'<small data-act="menu">'+SEGN[segAtual()][2]+' '+SEGN[segAtual()][1]+'</small></h1><span style="width:42px"></span></div>'+
     (extra?'<div class="tline">'+extra+'</div>':'');
 }
 function seletorMes(){
@@ -535,7 +565,7 @@ function seletorMes(){
   return '<div class="monthbar"><button data-act="mes" data-n="-1" '+(mk<=min?'disabled':'')+'>'+I.left+'</button><span>'+mesNome(mk)+'</span><button data-act="mes" data-n="1" '+(mk>=max?'disabled':'')+'>'+I.right+'</button></div>';
 }
 function bannerExemplo(){
-  return S.notas.some(function(n){return n.origem==='exemplo';})?'<div class="banner"><span>Você está vendo <b>dados de exemplo</b>.</span><button data-act="limparExemplo">Apagar exemplo</button></div>':'';
+  return notasSeg().some(function(n){return n.origem==='exemplo';})?'<div class="banner"><span>Você está vendo <b>dados de exemplo</b>.</span><button data-act="limparExemplo">Apagar exemplo</button></div>':'';
 }
 function render(){
   renderNav();
@@ -554,7 +584,7 @@ function render(){
 var CORES=['#c8f43a','#c77dff','#8f4fd6','#7fd4c4','#f0c46a','#5b5b66'];
 function telaInicio(){
   var c=calc();
-  if(!S.notas.length) return topo('Meu Mercado')+vazioGeral();
+  if(!notasSeg().length) return topo('Início')+vazioGeral();
   var mk=mesAtual(), M=c.meses[mk]||{total:0,notas:[],porMercado:{}}, P=c.meses[addMes(mk,-1)];
   var dif=P&&P.total?M.total/P.total-1:null, ticket=M.notas.length?M.total/M.notas.length:0;
   var h=topo('Início','<div style="margin:0 auto">'+seletorMes()+'</div>')+(V.tab==='inicio'?bannerExemplo():'')+bannerBackup();
@@ -598,7 +628,7 @@ function cardOndeFoi(M){
   if(!tot) return '';
   if(linhas.length>6){var resto=linhas.slice(5).reduce(function(a,x){return a+x.v;},0);linhas=linhas.slice(0,5).concat([{n:'Outros',v:resto,cor:'#5b5b66'}]);}
   var mx=linhas[0].v;
-  return '<div class="card mb"><div class="chead"><h2>Para onde foi</h2><div class="seg mini"><button data-act="ondeFoi" data-v="mercado" class="'+(modo==='mercado'?'on':'')+'">Mercado</button><button data-act="ondeFoi" data-v="categoria" class="'+(modo==='categoria'?'on':'')+'">Categoria</button></div></div>'+
+  return '<div class="card mb"><div class="chead"><h2>Para onde foi</h2><div class="seg mini"><button data-act="ondeFoi" data-v="mercado" class="'+(modo==='mercado'?'on':'')+'">'+(segAtual()==='mercado'?'Mercado':'Loja')+'</button><button data-act="ondeFoi" data-v="categoria" class="'+(modo==='categoria'?'on':'')+'">Categoria</button></div></div>'+
     linhas.map(function(x,i){var cor=x.cor||CORES[i%CORES.length];
       return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.n)+'</span><span><b>'+$$(x.v)+'</b> <span class="sub">'+Math.round(x.v/tot*100)+'%</span></span></div>'+
         '<div class="meter" style="margin-top:5px"><i style="width:'+(x.v/mx*100)+'%;background:'+cor+'"></i></div></div>';}).join('')+'</div>';
@@ -614,12 +644,12 @@ function bannerBackup(){
 function kpi(lb,v,badge,sub){return '<div class="card kpi"><div class="lb">'+lb+'</div><div class="v">'+v+badge+'</div><div class="sub" style="margin-top:4px">'+sub+'</div></div>';}
 function listaNotas(ns,vazio){
   if(!ns.length) return '<div class="empty">'+vazio+'</div>';
-  return '<div class="list">'+ns.map(function(n){return '<button class="li" data-act="nota" data-id="'+esc(n.id)+'"><span class="ic">'+esc(iniciais(nomeMercado(mercadoId(n),n.mercado)))+'</span><div class="tx"><div class="t1">'+esc(nomeMercado(mercadoId(n),n.mercado))+'</div><div class="t2">'+dataBR(n.data)+' · '+n.itens.length+' itens'+(n.pagamento?' · '+esc(n.pagamento):'')+'</div></div><div class="vv">'+$$(n.total)+'</div></button>';}).join('')+'</div>';
+  return '<div class="list">'+ns.map(function(n){return '<button class="li" data-act="nota" data-id="'+esc(n.id)+'"><span class="ic">'+esc(iniciais(nomeMercado(mercadoId(n),n.mercado)))+'</span><div class="tx"><div class="t1">'+esc(nomeMercado(mercadoId(n),n.mercado))+'</div><div class="t2">'+dataBR(n.data)+' · '+(n.itens.length?n.itens.length+(n.itens.length===1?' item':' itens'):'sem itens')+(n.pagamento?' · '+esc(n.pagamento):'')+'</div></div><div class="vv">'+$$(n.total)+'</div></button>';}).join('')+'</div>';
 }
 function vazioGeral(){
   return '<div class="card" style="padding:28px 20px;text-align:center"><div class="logo" style="width:56px;height:56px;border-radius:18px;margin:0 auto 14px">'+I.cart.replace('<svg','<svg style="width:28px;height:28px"')+'</div>'+
-   '<h2 style="margin-bottom:8px">Leia sua primeira nota</h2><p class="sub" style="max-width:330px;margin:0 auto 18px">Aponte a câmera para o QR Code da nota fiscal do mercado. Os produtos, preços e o total entram sozinhos no mês certo.</p>'+
-   '<div class="stack" style="max-width:300px;margin:0 auto"><button class="btn pri full" data-act="scan">'+I.scan+' Ler QR Code da nota</button><button class="btn full" data-act="exemplo">Ver com dados de exemplo</button></div></div>';
+   '<h2 style="margin-bottom:8px">'+(S.notas.length?'Nenhuma nota em '+SEGN[segAtual()][1]:'Leia sua primeira nota')+'</h2><p class="sub" style="max-width:330px;margin:0 auto 18px">Leia o QR Code da nota, digite a chave de acesso ou envie o arquivo (XML ou PDF) de compras online. O app separa sozinho em Mercado, Farmácia, Compras online e Outros.</p>'+
+   '<div class="stack" style="max-width:300px;margin:0 auto"><button class="btn pri full" data-act="scan">'+I.scan+' Ler ou enviar nota</button>'+(S.notas.length?'':'<button class="btn full" data-act="exemplo">Ver com dados de exemplo</button>')+'</div></div>';
 }
 
 /* ---------- Compras ---------- */
@@ -1043,8 +1073,10 @@ function importarCardapio(){
 }
 
 /* ---------- Novidades da versão ---------- */
-var VERSAO=13;
+var VERSAO=14;
 var NOVIDADES=[
+ {e:'🗂️',t:'Abas por tipo de compra',d:'No menu, escolha Mercado, Farmácia, Compras online ou Outros. Início, Produtos, Lojas e Notas mostram só aquele tipo, com o total do mês de cada um. A nota já vai sozinha para a aba certa, e dá para mudar na própria nota.',ir:{tab:'inicio',sel:'.menuBtn',dica:'Abra o menu para trocar de aba'}},
+ {e:'📦',t:'Notas da Amazon, Mercado Livre e outras lojas',d:'Em Ler nota, aponte para o código de barras da DANFE ou digite a chave de acesso (44 números). Para trazer os produtos e preços, toque em Enviar arquivo e escolha o XML ou o PDF da nota.',ir:{tab:'inicio',sel:'#fabScan',dica:'Toque para ler ou enviar uma nota'}},
  {e:'🥩',t:'Carne certa na comparação',d:'Se a lista pede alcatra bovina, o app não troca mais por alcatra suína (ou frango) só porque é mais barata. Vale para todas as carnes.',ir:{tab:'lista',sel:'[data-act=importarCardapio]',dica:'Importe do Cardápio para testar'}},
  {e:'🧹',t:'Visual mais limpo',d:'Listas com mais espaço, uma linha de detalhe por produto (preço anterior e mercado) e menos avisos repetidos pelas telas.',ir:{tab:'produtos',sel:'#busca',dica:'Veja a lista de produtos'}},
  {e:'🗂️',t:'Abas por receita e limpar lista',d:'Na Lista, os ingredientes importados ficam em abas, uma por receita. Toque em Limpar lista para esvaziar tudo, só os marcados ou só uma receita.',ir:{tab:'lista',sel:'[data-act=limparLista]',dica:'Toque aqui para limpar a lista',precisa:'lista'}},
@@ -1096,7 +1128,7 @@ function tirarDica(){var b=document.getElementById('dicaBalao');if(b)b.remove();
 /* ---------- Produtos ---------- */
 function telaProdutos(){
   var h=topo('Produtos','<div class="seg" style="width:100%"><button data-act="pview" data-v="repetidos" class="'+(V.pview==='repetidos'?'on':'')+'">Mudaram de preço</button><button data-act="pview" data-v="todos" class="'+(V.pview==='todos'?'on':'')+'">Todos</button></div>')+(V.tab==='inicio'?bannerExemplo():'');
-  if(!S.notas.length) return h+vazioGeral();
+  if(!notasSeg().length) return h+vazioGeral();
   if(V.pview==='repetidos'){
     var rs=repetidos(), n={todos:rs.length,subiu:0,baixou:0};
     rs.forEach(function(r){var t=tom(r.a.v);if(t==='bad')n.subiu++;else if(t==='good')n.baixou++;});
@@ -1143,8 +1175,8 @@ function listaProdutos(){
 
 /* ---------- Mercados ---------- */
 function telaMercados(){
-  var c=calc(), h=topo('Mercados')+(V.tab==='inicio'?bannerExemplo():'');
-  if(!S.notas.length) return h+vazioGeral();
+  var c=calc(), h=topo(SEGN[segAtual()][3])+(V.tab==='inicio'?bannerExemplo():'');
+  if(!notasSeg().length) return h+vazioGeral();
   var r=c.ranking;
   h+='<div class="card mb"><div class="chead"><h2>Onde vale mais a pena</h2></div><p class="sub" style="margin:-6px 0 14px">Mesmo produto, <b>mesmo mês</b>, mercados diferentes'+(r.periodo?' ('+(r.periodo.de===r.periodo.ate?mesNome(r.periodo.ate):mesCurto(r.periodo.de)+' a '+mesCurto(r.periodo.ate))+')':'')+'.</p>';
   if(!r.length){
@@ -1197,7 +1229,7 @@ function verNota(id){
      var tip=a?' title="'+mesCurto(a.prev.mes)+': '+$$(a.prev.ref)+uRef(a.prev.base,a.prev.un)+' ('+pct(a.v)+')"':'';
      return '<tr data-act="produto" data-g="'+esc(ix?ix.g:grupoDe(mid,it))+'" style="cursor:pointer"><td>'+esc(nomeProduto(it.nome))+(a&&t!=='neu'?'<div class="sub pr '+t+'" style="font-size:11.5px">'+(t==='bad'?'▲ ':'▼ ')+pct(a.v)+' vs '+mesCurto(a.prev.mes)+'</div>':'')+'</td><td class="r">'+String(it.qtd).replace('.',',')+' '+esc((it.un||'').toLowerCase())+'</td><td class="r pr '+t+'"'+tip+'>'+$$(it.vUnit)+'</td><td class="r">'+$$(it.vTotal)+'</td></tr>';
    }).join('')+
-   '</table><div class="stack mt"><button class="btn dan full" data-act="apagarNota" data-id="'+esc(n.id)+'">Apagar esta nota</button></div>');
+   '</table><label class="sub mt" style="display:block">Tipo de compra<select id="segNotaSalva" data-id="'+esc(n.id)+'" class="mt">'+SEGS.map(function(x){return '<option value="'+x[0]+'"'+(x[0]===segDe(n)?' selected':'')+'>'+x[2]+' '+x[1]+'</option>';}).join('')+'</select></label><div class="stack mt"><button class="btn dan full" data-act="apagarNota" data-id="'+esc(n.id)+'">Apagar esta nota</button></div>');
 }
 function verProduto(gid){
   var G=calc().grupos[gid]; if(!G) return;
@@ -1215,7 +1247,7 @@ function verProduto(gid){
   if(pw||semPeso) h+='<button class="btn full mb" data-act="peso" data-g="'+esc(G.id)+'">'+(pw?'Embalagem: <b>'+fmtTam(pw)+'</b> · alterar':'Informar peso/volume da embalagem')+'</button>';
   h+=spark(G);
   if(G.maisBarato) h+='<p class="sub mt" style="margin-bottom:0">Comparando compras do mesmo mês ('+mesNome(G.mesComum)+'): mais barato no <b style="color:var(--lime)">'+esc(nomeMercado(G.maisBarato))+'</b>.</p>';
-  h+='<table class="ptable mt"><tr><th>Mercado</th><th class="r">Último</th><th class="r">Menor</th><th class="r">Maior</th></tr>'+ms.map(function(m,i){
+  h+='<table class="ptable mt"><tr><th>'+(segAtual()==='mercado'?'Mercado':'Loja')+'</th><th class="r">Último</th><th class="r">Menor</th><th class="r">Maior</th></tr>'+ms.map(function(m,i){
     var u=G.ultRef[m], a=G.porMercado[m].filter(val).map(function(c){return c.ref;}), suf=G.base&&G.base!=='un'?'<span class="un">'+uRef(G.base)+'</span>':'';
     return '<tr><td>'+(m===G.maisBarato?'<span class="badge b-good" style="margin-right:6px">melhor</span>':'')+esc(nomeMercado(m))+'<div class="sub">'+dataBR((u||G.ultimo[m]).data)+'</div></td><td class="r"><b>'+(u?$$(u.ref)+suf:$$(G.ultimo[m].vUnit))+'</b></td><td class="r">'+(a.length?$$(Math.min.apply(null,a)):'—')+'</td><td class="r">'+(a.length?$$(Math.max.apply(null,a)):'—')+'</td></tr>';
   }).join('')+'</table>';
@@ -1244,8 +1276,9 @@ var cam={stream:null,raf:0,det:null,canvas:null,busy:false};
 function telaScan(){
   abrir(shead('Ler nota fiscal')+
    '<div id="scanArea"><div class="cam"><video id="vid" playsinline muted></video><div class="frame"></div><div class="msg" id="camMsg">Abrindo a câmera…</div></div>'+
-   '<p class="sub" style="text-align:center;margin:10px 0 4px">Aponte para o QR Code no fim da nota</p>'+
-   '<div class="hr">ou</div><div class="stack"><input id="linkNota" placeholder="Cole aqui o link da nota" inputmode="url" autocomplete="off"><button class="btn pur full" data-act="buscarLink">Buscar nota pelo link</button>'+
+   '<p class="sub" style="text-align:center;margin:10px 0 4px">Aponte para o QR Code da nota ou para o código de barras da DANFE (compras online)</p>'+
+   '<div class="hr">ou</div><div class="stack"><input id="linkNota" placeholder="Link da nota ou chave de acesso (44 números)" autocomplete="off"><button class="btn pur full" data-act="buscarLink">Buscar nota</button>'+
+   '<button class="btn full" data-act="arqNota">📎 Enviar arquivo da nota (XML ou PDF)</button><input type="file" id="arqNota" accept=".xml,.pdf,text/xml,application/xml,application/pdf" class="hide">'+
    '<button class="btn full" data-act="modoTexto">A busca falhou? Colar o texto da página</button></div></div><div id="scanRes"></div>');
   iniciarCamera();
 }
@@ -1255,7 +1288,7 @@ function iniciarCamera(){
   navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:1280}},audio:false}).then(function(st){
     cam.stream=st; var v=document.getElementById('vid'); if(!v){pararCamera();return;}
     v.srcObject=st; v.play(); msg.textContent='Procurando QR Code…';
-    if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:['qr_code']});}catch(e){cam.det=null;}}
+    if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:['qr_code','code_128']});}catch(e){cam.det=null;}}
     if(!cam.det&&!window.jsQR){var s=document.createElement('script');s.src='vendor/jsQR.js';document.head.appendChild(s);}
     loopScan();
   }).catch(function(){msg.textContent='Sem permissão para a câmera. Libere nas configurações ou use o link abaixo.';});
@@ -1279,7 +1312,75 @@ function loopScan(){
 function pararCamera(){cancelAnimationFrame(cam.raf);if(cam.stream){cam.stream.getTracks().forEach(function(t){t.stop();});}cam.stream=null;cam.busy=false;}
 function achouQR(txt){
   pararCamera(); if(navigator.vibrate) navigator.vibrate(60);
-  buscarNota(txt.trim());
+  lerEntrada(txt.trim());
+}
+/* link da Fazenda (NFC-e com itens) ou chave de 44 números (NF-e de loja online, só cabeçalho) */
+function lerEntrada(txt){
+  var so=String(txt||'').replace(/\s/g,'');
+  if(/^\d{44}$/.test(so)) return porChave(so);
+  buscarNota(txt);
+}
+function infoCnpj(cnpj){
+  cnpj=String(cnpj||'').replace(/\D/g,''); if(cnpj.length!==14) return Promise.resolve(null);
+  var ctrl=window.AbortController?new AbortController():null; if(ctrl)setTimeout(function(){ctrl.abort();},8000);
+  return fetch('https://brasilapi.com.br/api/cnpj/v1/'+cnpj,ctrl?{signal:ctrl.signal}:{}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
+}
+function porChave(ch){
+  var k=NotaParser.lerChave(ch);
+  if(!k||!k.valida){resArea('<div class="err mt">Essa chave não confere. Confira os 44 números (estão embaixo do código de barras da nota).</div>');return;}
+  if(S.notas.some(function(n){return n.chave===k.chave;})){resArea('<div class="ok mt">Essa nota já está salva.</div>');return;}
+  var sa=document.getElementById('scanArea'); if(sa) sa.classList.add('hide');
+  resArea('<div class="card" style="display:flex;gap:12px;align-items:center"><span class="spin"></span><div><b>Lendo a chave da nota…</b><div class="sub">Buscando o nome da loja pelo CNPJ.</div></div></div>');
+  infoCnpj(k.cnpj).then(function(d){
+    var nome=d?(d.nome_fantasia||d.razao_social||''):'';
+    var n={mercado:nome||('Loja '+NotaParser.fmtCnpj(k.cnpj)),cnpj:NotaParser.fmtCnpj(k.cnpj),endereco:d?[d.municipio,d.uf].filter(Boolean).join(' - '):'',
+      data:null,dataMin:k.ano+'-'+String(k.mes).padStart(2,'0'),itens:[],total:0,desconto:0,pagamento:'',chave:k.chave,modelo:k.modelo,origem:'chave',
+      seg:adivinhaSeg((d&&(d.razao_social+' '+(d.nome_fantasia||'')))||nome,d&&d.cnae_fiscal,k.modelo)};
+    previa(n,'');
+  });
+}
+function lerArquivoNota(f){
+  if(!f) return; pararCamera();
+  var sa=document.getElementById('scanArea'); if(sa) sa.classList.add('hide');
+  resArea('<div class="card" style="display:flex;gap:12px;align-items:center"><span class="spin"></span><div><b>Lendo o arquivo…</b><div class="sub">'+esc(f.name)+'</div></div></div>');
+  var fim=function(n){
+    if(!n){resArea('<div class="err">Não reconheci uma nota fiscal nesse arquivo. Use o XML ou o PDF (DANFE) da nota.</div><button class="btn full mt" data-act="scanOutra">Tentar de novo</button>');return;}
+    n.origem='arquivo';
+    if(n.chave&&S.notas.some(function(x){return x.chave===n.chave;})){resArea('<div class="ok">Essa nota já está salva.</div>');return;}
+    var k=n.chave?NotaParser.lerChave(n.chave):null;
+    if(k){n.modelo=n.modelo||k.modelo; if(!n.cnpj)n.cnpj=NotaParser.fmtCnpj(k.cnpj); if(!n.data)n.dataMin=k.ano+'-'+String(k.mes).padStart(2,'0');}
+    var p=n.mercado?Promise.resolve(null):infoCnpj(n.cnpj);
+    p.then(function(d){
+      if(d) n.mercado=d.nome_fantasia||d.razao_social||'';
+      if(!n.mercado) n.mercado='Loja '+(n.cnpj||'');
+      n.seg=adivinhaSeg((n.razao||'')+' '+n.mercado+(d?' '+d.razao_social:''),d&&d.cnae_fiscal,n.modelo);
+      previa(n,'');
+    });
+  };
+  var rd=new FileReader();
+  if(/\.xml$/i.test(f.name)||/xml/.test(f.type)){
+    rd.onload=function(){var n=null;try{n=NotaParser.parseNotaXML(rd.result);}catch(e){} fim(n);};
+    rd.readAsText(f);
+  }else if(/\.pdf$/i.test(f.name)||/pdf/.test(f.type)){
+    rd.onload=function(){textoPdf(rd.result).then(function(t){var n=NotaParser.parseDanfeText(t);fim(n&&(n.chave||n.itens.length)?n:null);},function(){resArea('<div class="err">Não consegui abrir o PDF (precisa de internet na primeira vez). Tente o XML da nota.</div><button class="btn full mt" data-act="scanOutra">Voltar</button>');});};
+    rd.readAsArrayBuffer(f);
+  }else fim(null);
+}
+/* lê o texto do PDF com o pdf.js, montando as linhas pela posição na página */
+function textoPdf(buf){
+  var carrega=window.pdfjsLib?Promise.resolve():new Promise(function(ok,no){var sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);});
+  return carrega.then(function(){
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    return pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+  }).then(function(pdf){
+    var ps=[];for(var i=1;i<=Math.min(pdf.numPages,6);i++)ps.push(pdf.getPage(i).then(function(pg){return pg.getTextContent();}));
+    return Promise.all(ps);
+  }).then(function(cs){
+    return cs.map(function(c){
+      var ls={};c.items.forEach(function(it){var y=Math.round(it.transform[5]/3);(ls[y]=ls[y]||[]).push(it);});
+      return Object.keys(ls).sort(function(a,b){return b-a;}).map(function(y){return ls[y].sort(function(a,b){return a.transform[4]-b.transform[4];}).map(function(it){return it.str;}).join(' ');}).join('\n');
+    }).join('\n');
+  });
 }
 function resArea(html){var r=document.getElementById('scanRes');if(r)r.innerHTML=html;}
 function buscarNota(url){
@@ -1313,16 +1414,28 @@ var pend=null;
 function previa(n,url){
   n.origem=n.origem||'qr'; n.url=url||''; pend=n;
   var mid=mercadoId(n), dup=n.chave&&S.notas.some(function(x){return x.chave===n.chave;});
-  resArea('<div class="ok">Nota encontrada!</div><div class="card mt"><div style="display:flex;gap:12px;align-items:center"><span class="ic" style="width:44px;height:44px;border-radius:13px;background:var(--card2);display:grid;place-items:center;font-weight:700;color:var(--purple)">'+esc(iniciais(n.mercado))+'</span><div style="flex:1;min-width:0"><b>'+esc(nomeMercado(mid,n.mercado))+'</b><div class="sub">'+(n.data?dataBR(n.data)+'/'+n.data.slice(0,4):'sem data')+' · '+n.itens.length+' itens</div></div><b style="font-size:18px">'+$$(n.total)+'</b></div>'+
+  if(!n.seg) n.seg=adivinhaSeg(n.mercado,'',n.modelo);
+  var semItens=!n.itens.length;
+  resArea('<div class="ok">'+(semItens?'Nota identificada. Os produtos não vêm no código: confira o total abaixo, ou envie o arquivo XML/PDF para trazer os itens.':'Nota encontrada!')+'</div><div class="card mt"><div style="display:flex;gap:12px;align-items:center"><span class="ic" style="width:44px;height:44px;border-radius:13px;background:var(--card2);display:grid;place-items:center;font-weight:700;color:var(--purple)">'+esc(iniciais(n.mercado))+'</span><div style="flex:1;min-width:0"><b>'+esc(nomeMercado(mid,n.mercado))+'</b><div class="sub">'+(n.data?dataBR(n.data)+'/'+n.data.slice(0,4)+' · ':'')+(semItens?'nota nº '+(n.chave?Number(n.chave.slice(25,34)):'—'):n.itens.length+' itens')+'</div></div>'+(semItens?'':'<b style="font-size:18px">'+$$(n.total)+'</b>')+'</div>'+
    '<div class="list mt">'+n.itens.slice(0,6).map(function(it){return '<div class="li" style="padding:8px 0"><div class="tx"><div class="t1" style="font-weight:500">'+esc(nomeProduto(it.nome))+'</div></div><div class="vv">'+$$(it.vTotal)+'</div></div>';}).join('')+(n.itens.length>6?'<div class="sub" style="padding-top:6px">+ '+(n.itens.length-6)+' itens</div>':'')+'</div>'+
-   (n.data?'':'<label class="sub mt" style="display:block">Data da compra<input type="date" id="dataManual" class="mt" value="'+new Date().toISOString().slice(0,10)+'"></label>')+
-   '</div>'+(dup?'<div class="err mt">Essa nota já está salva.</div>':'<button class="btn pri full mt" data-act="salvarNota">Salvar nota</button>')+'<button class="btn full mt" data-act="scanOutra">Ler outra</button>');
+   (n.data?'':'<label class="sub mt" style="display:block">Data da compra<input type="date" id="dataManual" class="mt" value="'+(n.dataMin&&n.dataMin!==hojeMes()?n.dataMin+'-01':new Date().toISOString().slice(0,10))+'"></label>')+
+   (semItens?'<label class="sub mt" style="display:block">Total pago (R$)<input id="totalManual" class="mt" inputmode="decimal" placeholder="0,00" value="'+(n.total?String(n.total.toFixed(2)).replace('.',','):'')+'"></label><label class="sub mt" style="display:block">O que foi comprado (opcional)<input id="descManual" class="mt" placeholder="ex.: fone de ouvido"></label>':'')+
+   '<label class="sub mt" style="display:block">Tipo de compra<select id="segNota" class="mt">'+SEGS.map(function(x){return '<option value="'+x[0]+'"'+(x[0]===n.seg?' selected':'')+'>'+x[2]+' '+x[1]+'</option>';}).join('')+'</select></label>'+
+   (semItens?'<button class="btn full mt" data-act="arqNota">📎 Enviar o XML ou PDF desta nota</button>':'')+'</div>'+(dup?'<div class="err mt">Essa nota já está salva.</div>':'<button class="btn pri full mt" data-act="salvarNota">Salvar nota</button>')+'<button class="btn full mt" data-act="scanOutra">Ler outra</button>');
 }
 function salvarPendente(){
   if(!pend) return; pararCamera();
+  var sgEl=document.getElementById('segNota'); if(sgEl) pend.seg=sgEl.value;
+  if(!pend.itens.length){
+    var tv=NotaParser.num((document.getElementById('totalManual')||{}).value||'');
+    if(!(tv>0)){toast('Digite o total pago');return;}
+    pend.total=Math.round(tv*100)/100;
+    var dsc=((document.getElementById('descManual')||{}).value||'').trim();
+    if(dsc) pend.itens=[{nome:dsc,codigo:'',qtd:1,un:'UN',vUnit:pend.total,vTotal:pend.total}];
+  }
   if(!pend.data){var dm=document.getElementById('dataManual');pend.data=(dm&&dm.value?dm.value:new Date().toISOString().slice(0,10))+'T12:00:00';}
   pend.id=pend.chave||('n'+Date.now()); pend.lidaEm=new Date().toISOString();
-  var nota=pend; S.notas.push(pend); var mk=pend.data.slice(0,7); pend=null;
+  var nota=pend; S.notas.push(pend); S.segV=segDe(pend); var mk=pend.data.slice(0,7); pend=null;
   // itens da lista de compras que vieram nesta nota são marcados como comprados
   var mid=mercadoId(nota), gsNota={}; nota.itens.forEach(function(it){gsNota[grupoDe(mid,it)]=1;});
   var marcados=0; S.lista.forEach(function(l){if(!l.feito&&l.g&&gsNota[l.g]){l.feito=true;marcados++;}});
@@ -1439,7 +1552,8 @@ document.addEventListener('click',function(e){
     case 'importar': document.getElementById('importFile').click(); break;
     case 'apagarTudo': if(confirm('Apagar todas as notas e ajustes deste celular?')){S=vazio();V.mes=null;save();fechar();render();} break;
     case 'apagarNota': if(confirm('Apagar esta nota?')){S.notas=S.notas.filter(function(n){return n.id!==t.dataset.id;});save();fechar();render();toast('Nota apagada');} break;
-    case 'buscarLink': var u=(document.getElementById('linkNota').value||'').trim(); if(u){pararCamera();buscarNota(u);} break;
+    case 'buscarLink': var u=(document.getElementById('linkNota').value||'').trim(); if(u){pararCamera();lerEntrada(u);} break;
+    case 'arqNota': document.getElementById('arqNota').click(); break;
     case 'modoTexto': pararCamera(); document.getElementById('scanArea').classList.add('hide'); falhaBusca('Cole o texto da página da nota.',(document.getElementById('linkNota').value||'').trim()); break;
     case 'lerTexto':
       var tx=document.getElementById('textoNota').value; var n=NotaParser.parseNotaText(tx);
@@ -1519,6 +1633,7 @@ document.addEventListener('click',function(e){
     case 'ignorar': S.ignorados[t.dataset.k]=1; save(); render(); verSugestoes(); break;
     case 'verSugestoes': verSugestoes(); break;
     case 'menu': menu(); break;
+    case 'seg': trocarSeg(t.dataset.v); break;
     case 'ondeFoi': V.ondeFoi=t.dataset.v; render(); break;
     case 'verRepetidos': V.tab='produtos'; V.pview='repetidos'; V.rep='todos'; render(); window.scrollTo(0,0); break;
     case 'sugMais': V.sugMais=!V.sugMais; render(); break;
@@ -1531,6 +1646,8 @@ document.addEventListener('input',function(e){
   if(e.target.id==='busca'){V.busca=e.target.value;document.getElementById('plist').innerHTML=V.pview==='repetidos'?listaRepetidos():listaProdutos();}
 });
 document.addEventListener('change',function(e){
+  if(e.target.id==='arqNota'){lerArquivoNota(e.target.files&&e.target.files[0]);}
+  if(e.target.id==='segNotaSalva'){var nt=S.notas.find(function(x){return x.id===e.target.dataset.id;});if(nt){nt.seg=e.target.value;save();fechar();render();toast('Nota movida para '+SEGN[nt.seg][1]);}}
   if(e.target.id==='catProd'){var g=e.target.dataset.g, v=e.target.value; if(v===catAuto(calc().grupos[g].nome)) delete S.cats[g]; else S.cats[g]=v; save(); render(); toast('Categoria: '+v);}
   if(e.target.id==='parA'){V.parA=e.target.value;render();}
   if(e.target.id==='parB'){V.parB=e.target.value;render();}
